@@ -11,6 +11,7 @@
 /* Drivers */
 #include "sd_driver.h"
 #include "display.h"
+#include "face_engine.h"
 #include "imu_driver.h"
 #include "touch_driver.h"
 #include "ws2812_driver.h"
@@ -120,7 +121,9 @@ esp_err_t app_boot(void)
     }
 
     /* ── STEP 5: Drivers ─────────────────────────────────────────────── */
-    BOOT_STEP_V(5, "display",    display_init());
+    BOOT_STEP_V(5, "display",       display_init());
+    BOOT_STEP_V(5, "face_engine",   face_engine_init());
+    BOOT_STEP_V(5, "face_render",   face_engine_start_task());
     BOOT_STEP  (5, "imu",        imu_init());
     BOOT_STEP_V(5, "touch",      touch_driver_init());
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
