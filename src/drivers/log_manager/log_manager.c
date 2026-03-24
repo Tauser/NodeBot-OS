@@ -226,10 +226,6 @@ esp_err_t log_write(log_level_t level, const char *service, const char *message)
 void log_flush_now(void)
 {
     if (!s_buf || !s_flush_mtx) return;
-    /* xTaskNotifyGive acorda a flush_task se chamado de outra task */
-    if (s_flush_task && xTaskGetCurrentTaskHandle() != s_flush_task)
-        xTaskNotifyGive(s_flush_task);
-
     if (xSemaphoreTake(s_flush_mtx, pdMS_TO_TICKS(5000)) != pdTRUE) return;
     do_flush();
     xSemaphoreGive(s_flush_mtx);
