@@ -1,1 +1,6 @@
-idf_component_register(COMPONENT_NAME "drv_display")
+idf_component_register(
+    SRCS           "display.cpp"
+    INCLUDE_DIRS   "."
+    REQUIRES       platform LovyanGFX
+    PRIV_REQUIRES  esp_timer
+)
