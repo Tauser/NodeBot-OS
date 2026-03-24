@@ -1,214 +1,162 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 #include <inttypes.h>
-#include <string.h>
-#include <stdint.h>
 
-#include "event_bus.h"
+#include "config_manager.h"
+#include "nvs_defaults.h"
 
-static const char *TAG = "test_ebus";
+static const char *TAG = "test_cfg";
 
-/* ── payloads de teste ───────────────────────────────────────────────── */
-typedef struct { int16_t ax, ay, az; } imu_data_t;
-typedef struct { uint16_t freq; uint8_t volume; } led_cmd_t;
-
-/* ── contadores de callbacks ─────────────────────────────────────────── */
-static volatile uint32_t g_cb_touch;
-static volatile uint32_t g_cb_imu;
-static volatile uint32_t g_cb_led;
-static volatile int16_t  g_last_ax;
-
-/* ── callbacks ───────────────────────────────────────────────────────── */
-static void on_touch(uint16_t type, void *p)
-{
-    (void)p;
-    g_cb_touch++;
-    ESP_LOGI(TAG, "  [CB] TOUCH type=0x%04X  count=%" PRIu32, type, g_cb_touch);
-}
-
-static void on_imu(uint16_t type, void *p)
-{
-    imu_data_t *d = (imu_data_t *)p;
-    g_last_ax = d->ax;
-    g_cb_imu++;
-    ESP_LOGI(TAG, "  [CB] IMU  ax=%d ay=%d az=%d  count=%" PRIu32,
-             d->ax, d->ay, d->az, g_cb_imu);
-}
-
-static void on_led(uint16_t type, void *p)
-{
-    led_cmd_t *d = (led_cmd_t *)p;
-    g_cb_led++;
-    ESP_LOGI(TAG, "  [CB] LED  freq=%u vol=%u  count=%" PRIu32,
-             d->freq, d->volume, g_cb_led);
-}
-
-/* segundo subscriber no mesmo tipo — verifica múltiplos assinantes */
-static volatile uint32_t g_cb_imu2;
-static void on_imu2(uint16_t type, void *p)
-{
-    (void)p; (void)type;
-    g_cb_imu2++;
-}
-
-/* ── macro de assertiva ──────────────────────────────────────────────── */
+/* ── assertiva ───────────────────────────────────────────────────────── */
 static uint32_t s_pass, s_fail;
 
-#define ASSERT(cond, msg)                                               \
-    do {                                                                \
-        if (cond) {                                                     \
-            ESP_LOGI(TAG, "  PASS  %s", msg);                          \
-            s_pass++;                                                   \
-        } else {                                                        \
-            ESP_LOGE(TAG, "  FAIL  %s  (%s:%d)", msg, __FILE__, __LINE__); \
-            s_fail++;                                                   \
-        }                                                               \
+#define ASSERT(cond, msg)                                                    \
+    do {                                                                      \
+        if (cond) {                                                           \
+            ESP_LOGI(TAG, "  PASS  %s", msg);                                \
+            s_pass++;                                                         \
+        } else {                                                              \
+            ESP_LOGE(TAG, "  FAIL  %s  (%s:%d)", msg, __FILE__, __LINE__);   \
+            s_fail++;                                                         \
+        }                                                                     \
     } while (0)
 
-static void wait(uint32_t ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }
+/* ── helper: lê CRC armazenado diretamente no NVS ───────────────────── */
+static uint32_t read_raw_crc(void)
+{
+    nvs_handle_t h;
+    uint32_t crc = 0;
+    if (nvs_open(CONFIG_NAMESPACE, NVS_READONLY, &h) == ESP_OK) {
+        nvs_get_u32(h, CONFIG_CRC_KEY, &crc);
+        nvs_close(h);
+    }
+    return crc;
+}
 
-/* ══════════════════════════════════════════════════════════════════════ */
+static void write_raw_crc(uint32_t bad_crc)
+{
+    nvs_handle_t h;
+    if (nvs_open(CONFIG_NAMESPACE, NVS_READWRITE, &h) == ESP_OK) {
+        nvs_set_u32(h, CONFIG_CRC_KEY, bad_crc);
+        nvs_commit(h);
+        nvs_close(h);
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════ */
 
 void app_main(void)
 {
     ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "══════════════════════════════════════");
-    ESP_LOGI(TAG, "  EventBus — teste unitário E12");
-    ESP_LOGI(TAG, "══════════════════════════════════════");
+    ESP_LOGI(TAG, "════════════════════════════════════════");
+    ESP_LOGI(TAG, "  ConfigManager — teste unitário E13");
+    ESP_LOGI(TAG, "════════════════════════════════════════");
 
-    /* ── T1: init ──────────────────────────────────────────────────── */
+    /* ── T1: init (estado limpo — factory reset forçado) ─────────────── */
     ESP_LOGI(TAG, "T1: init");
-    ASSERT(event_bus_init() == ESP_OK, "init retorna ESP_OK");
 
-    /* ── T2: subscribe ─────────────────────────────────────────────── */
-    ESP_LOGI(TAG, "T2: subscribe");
-    ASSERT(event_bus_subscribe(EVT_TOUCH_PRESS, on_touch) == ESP_OK,
-           "subscribe TOUCH_PRESS");
-    ASSERT(event_bus_subscribe(EVT_IMU_DATA,    on_imu)   == ESP_OK,
-           "subscribe IMU_DATA (1)");
-    ASSERT(event_bus_subscribe(EVT_IMU_DATA,    on_imu2)  == ESP_OK,
-           "subscribe IMU_DATA (2) — mesmo tipo, dois assinantes");
-    ASSERT(event_bus_subscribe(EVT_LED_CMD,     on_led)   == ESP_OK,
-           "subscribe LED_CMD");
-    ASSERT(event_bus_subscribe(EVT_TOUCH_PRESS, NULL) == ESP_ERR_INVALID_ARG,
-           "subscribe com callback NULL retorna INVALID_ARG");
-
-    /* ── T3: publish + payload copiado ─────────────────────────────── */
-    ESP_LOGI(TAG, "T3: publish com payload");
-    imu_data_t imu = { .ax = 123, .ay = -456, .az = 1000 };
-    ASSERT(event_bus_publish(EVT_IMU_DATA, &imu, sizeof(imu),
-                             EVENT_PRIO_SYSTEM) == ESP_OK,
-           "publish IMU_DATA retorna ESP_OK");
-
-    /* Corrompe o buffer original — o payload do callback deve ser independente */
-    imu.ax = 0x7FFF;
-
-    wait(50);
-    ASSERT(g_cb_imu  == 1, "callback IMU_DATA chamado 1×");
-    ASSERT(g_cb_imu2 == 1, "callback IMU_DATA (2) chamado 1× — múltiplos subs");
-    ASSERT(g_last_ax == 123, "payload ax=123 preservado após corrupção do original");
-
-    /* ── T4: publish sem payload ────────────────────────────────────── */
-    ESP_LOGI(TAG, "T4: publish sem payload (NULL)");
-    ASSERT(event_bus_publish(EVT_TOUCH_PRESS, NULL, 0,
-                             EVENT_PRIO_SAFETY) == ESP_OK,
-           "publish TOUCH_PRESS sem payload retorna ESP_OK");
-    wait(50);
-    ASSERT(g_cb_touch == 1, "callback TOUCH_PRESS chamado 1×");
-
-    /* ── T5: múltiplos eventos ──────────────────────────────────────── */
-    ESP_LOGI(TAG, "T5: multiplos eventos (5× LED_CMD)");
-    led_cmd_t led = { .freq = 440, .volume = 80 };
-    for (int i = 0; i < 5; i++) {
-        event_bus_publish(EVT_LED_CMD, &led, sizeof(led), EVENT_PRIO_COSMETIC);
+    /* Garante estado limpo: apaga o namespace antes do primeiro init */
+    nvs_flash_init();
+    nvs_handle_t h_clean;
+    if (nvs_open(CONFIG_NAMESPACE, NVS_READWRITE, &h_clean) == ESP_OK) {
+        nvs_erase_all(h_clean);
+        nvs_commit(h_clean);
+        nvs_close(h_clean);
     }
-    wait(100);
-    ASSERT(g_cb_led == 5, "5 eventos LED_CMD entregues");
 
-    /* ── T6: esgotamento de fila + pool ────────────────────────────── */
+    ASSERT(config_manager_init() == ESP_OK, "init retorna ESP_OK");
+
+    /* ── T2: schema version ──────────────────────────────────────────── */
+    ESP_LOGI(TAG, "T2: schema version");
+    ASSERT(config_get_schema_version() == CONFIG_SCHEMA_VERSION,
+           "schema_ver == CONFIG_SCHEMA_VERSION");
+
+    /* ── T3: defaults carregados corretamente ────────────────────────── */
+    ESP_LOGI(TAG, "T3: defaults");
+    ASSERT(config_get_int("led_bright",   -1) == 128, "led_bright  == 128");
+    ASSERT(config_get_int("disp_bright",  -1) == 200, "disp_bright == 200");
+    ASSERT(config_get_int("disp_timeout", -1) == 30,  "disp_timeout== 30");
+    ASSERT(config_get_int("audio_vol",    -1) == 80,  "audio_vol   == 80");
+    ASSERT(config_get_int("wifi_en",      -1) == 0,   "wifi_en     == 0");
+
+    /* ── T4: set e get ───────────────────────────────────────────────── */
+    ESP_LOGI(TAG, "T4: set e get");
+    ASSERT(config_set_int("led_bright", 42) == ESP_OK, "set led_bright=42");
+    ASSERT(config_get_int("led_bright", -1) == 42,     "get led_bright==42");
+
+    ASSERT(config_set_int("audio_vol", 55) == ESP_OK,  "set audio_vol=55");
+    ASSERT(config_get_int("audio_vol", -1) == 55,      "get audio_vol==55");
+
+    /* ── T5: write-only-if-changed ───────────────────────────────────── */
     /*
-     * Com o scheduler suspenso o despachante não roda.
-     * Publicamos 70 eventos:
-     *   – Os primeiros 32 vão para a fila SAFETY (depth=32)  → ok
-     *   – Os seguintes 3 falham (fila SAFETY cheia)          → dropped
-     *   – Os próximos 32 vão para a fila SYSTEM              → ok
-     *     (slots foram liberados quando a fila SAFETY rejeitou)
-     *   – Os últimos 3 falham com pool esgotado              → dropped
-     * Total esperado: ok=64, dropped=6
+     * Definimos "led_bright" duas vezes com o mesmo valor.
+     * Ambas retornam ESP_OK, mas a segunda não deve tocar a flash.
+     * Verificamos indiretamente: o CRC não muda na segunda chamada.
      */
-    ESP_LOGI(TAG, "T6: esgotamento de fila / pool");
+    ESP_LOGI(TAG, "T5: write-only-if-changed");
+    config_set_int("led_bright", 99);
+    uint32_t crc_before = read_raw_crc();
+    esp_err_t ret2 = config_set_int("led_bright", 99); /* mesmo valor */
+    uint32_t crc_after = read_raw_crc();
 
-    uint32_t drp_before;
-    event_bus_get_stats(NULL, NULL, &drp_before);
+    ASSERT(ret2 == ESP_OK,           "set mesmo valor retorna ESP_OK");
+    ASSERT(crc_before == crc_after,  "CRC não muda em set sem alteração");
 
-    vTaskSuspendAll();
-    int ok_cnt = 0, fail_cnt = 0;
-    for (int i = 0; i < 70; i++) {
-        uint8_t prio = (i < 35) ? EVENT_PRIO_SAFETY : EVENT_PRIO_SYSTEM;
-        esp_err_t e = event_bus_publish(EVT_IMU_DATA, &imu, sizeof(imu), prio);
-        if (e == ESP_OK) ok_cnt++;
-        else             fail_cnt++;
-    }
-    xTaskResumeAll();
+    /* ── T6: CRC armazenado é não-zero e coerente ────────────────────── */
+    ESP_LOGI(TAG, "T6: CRC coerência");
+    uint32_t stored_crc = read_raw_crc();
+    ASSERT(stored_crc != 0, "CRC armazenado != 0");
+    ESP_LOGI(TAG, "  CRC atual = 0x%08" PRIX32, stored_crc);
 
-    wait(400);   /* aguarda despacho de todos os eventos enfileirados */
+    /* CRC deve mudar ao alterar um valor */
+    config_set_int("ble_en", 1);
+    uint32_t crc_new = read_raw_crc();
+    ASSERT(crc_new != stored_crc, "CRC muda após alteração de valor");
 
-    uint32_t drp_after;
-    event_bus_get_stats(NULL, NULL, &drp_after);
+    /* ── T7: CRC inválido → factory reset no próximo init ────────────── */
+    ESP_LOGI(TAG, "T7: CRC inválido -> factory reset automatico");
 
-    ASSERT(ok_cnt <= EVENT_BUS_POOL_SIZE, "T6 enviados ≤ pool size (64)");
-    ASSERT(fail_cnt > 0, "T6 drop detectado (fila ou pool cheio)");
-    ESP_LOGI(TAG, "  T6 enviados=%d descartados=%d", ok_cnt, fail_cnt);
-    ASSERT(drp_after > drp_before, "T6 contador dropped incrementado");
+    config_set_int("led_bright", 77);   /* valor diferente do default */
+    ASSERT(config_get_int("led_bright", -1) == 77, "led_bright=77 antes da corrupção");
 
-    /* ── T7: prioridade — SAFETY antes de COSMETIC ──────────────────── */
-    /*
-     * Publicamos COSMETIC antes de SAFETY com scheduler suspenso.
-     * Ao resumir, o despachante deve entregar SAFETY primeiro.
-     * Rastreamos a ordem de chegada via g_cb_touch (SAFETY) e g_cb_led (COSMETIC).
-     */
-    ESP_LOGI(TAG, "T7: prioridade SAFETY > COSMETIC");
+    write_raw_crc(0xDEADBEEF);          /* corrompe o CRC no NVS */
 
-    uint32_t touch_before = g_cb_touch;
-    uint32_t led_before   = g_cb_led;
+    ASSERT(config_manager_init() == ESP_OK, "re-init após CRC corrompido retorna ESP_OK");
+    ASSERT(config_get_int("led_bright", -1) == 128,
+           "led_bright restaurado para 128 após CRC mismatch");
+    ASSERT(config_get_schema_version() == CONFIG_SCHEMA_VERSION,
+           "schema_ver restaurado após reset");
 
-    /*
-     * Nota: C não tem closures. O teste de ordem usa uma variável global
-     * simples: verifica apenas que ambos os callbacks foram chamados após
-     * o resume — a prioridade garante que SAFETY drena primeiro dentro
-     * do despachante (loop reinicia pelo índice 0 a cada evento).
-     * Validação formal de ordem requereria semáforos binários adicionais.
-     */
-    vTaskSuspendAll();
-    event_bus_publish(EVT_LED_CMD,     &led, sizeof(led), EVENT_PRIO_COSMETIC);
-    event_bus_publish(EVT_LED_CMD,     &led, sizeof(led), EVENT_PRIO_COSMETIC);
-    event_bus_publish(EVT_TOUCH_PRESS, NULL, 0,            EVENT_PRIO_SAFETY);
-    xTaskResumeAll();
+    /* ── T8: factory_reset explícito ────────────────────────────────── */
+    ESP_LOGI(TAG, "T8: factory_reset explicito");
+    config_set_int("disp_bright", 50);
+    ASSERT(config_get_int("disp_bright", -1) == 50,  "disp_bright=50 antes do reset");
 
-    wait(100);
-    ASSERT(g_cb_touch > touch_before, "T7 SAFETY (TOUCH) entregue após publicar após COSMETIC");
-    ASSERT(g_cb_led   > led_before,   "T7 COSMETIC (LED) também entregue");
+    ASSERT(config_factory_reset() == ESP_OK, "factory_reset retorna ESP_OK");
+    ASSERT(config_get_int("disp_bright", -1) == 200, "disp_bright restaurado para 200");
+    ASSERT(config_get_int("touch_thr",   -1) == 150, "touch_thr restaurado para 150");
 
-    /* ── T8: estatísticas finais ────────────────────────────────────── */
-    ESP_LOGI(TAG, "T8: estatísticas");
-    wait(100);
-    uint32_t pub, del, drp;
-    event_bus_get_stats(&pub, &del, &drp);
-    ESP_LOGI(TAG, "  published=%" PRIu32 "  delivered=%" PRIu32
-                  "  dropped=%" PRIu32, pub, del, drp);
-    ASSERT(pub > 0,         "published > 0");
-    ASSERT(del > 0,         "delivered > 0");
-    ASSERT(drp >= 6,        "dropped ≥ 6  (T6: fila + pool cheios)");
-    ASSERT(del <= pub,      "delivered ≤ published");
+    /* CRC deve ser válido após factory reset */
+    uint32_t crc_post_reset = read_raw_crc();
+    ASSERT(crc_post_reset != 0, "CRC não-zero após factory reset");
 
-    /* ── Resultado ──────────────────────────────────────────────────── */
+    /* ── T9: chave inexistente retorna default ───────────────────────── */
+    ESP_LOGI(TAG, "T9: chave inexistente");
+    ASSERT(config_get_int("nao_existe", 42) == 42,
+           "chave inexistente retorna default_val");
+    ASSERT(config_get_int("nao_existe", -7) == -7,
+           "chave inexistente retorna default_val negativo");
+
+    /* ── Resultado ───────────────────────────────────────────────────── */
     ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "══════════════════════════════════════");
+    ESP_LOGI(TAG, "════════════════════════════════════════");
     ESP_LOGI(TAG, "  Resultado: PASS=%" PRIu32 "  FAIL=%" PRIu32, s_pass, s_fail);
     if (s_fail == 0)
         ESP_LOGI(TAG, "  ✓ todos os testes passaram");
     else
-        ESP_LOGE(TAG, "  ✗ %"PRIu32" teste(s) falharam", s_fail);
-    ESP_LOGI(TAG, "══════════════════════════════════════");
+        ESP_LOGE(TAG, "  ✗ %" PRIu32 " teste(s) falharam", s_fail);
+    ESP_LOGI(TAG, "════════════════════════════════════════");
 }
