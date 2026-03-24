@@ -1,1 +1,6 @@
-idf_component_register(COMPONENT_NAME "drv_touch")
+idf_component_register(
+    SRCS           "touch_driver.c"
+    INCLUDE_DIRS   "."
+    REQUIRES       platform
+    PRIV_REQUIRES  driver
+)
