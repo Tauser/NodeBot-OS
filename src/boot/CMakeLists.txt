@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS          "boot_sequence.c"
     INCLUDE_DIRS  "."
+                  "../drivers/audio"
     PRIV_REQUIRES
         platform
         config_manager
