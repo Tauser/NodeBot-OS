@@ -1,23 +1,10 @@
 #pragma once
-
-#include <stdint.h>
-#include <stddef.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Inicializa I2S0 para INMP441: 16 kHz, mono, 32-bit container. */
-void inmp441_init(void);
-
 /*
- * Lê até `samples` amostras (máx 512 por chamada).
- * Extrai os 16 bits úteis do container de 32 bits (shift de 16).
- * Bloqueia até os dados ficarem disponíveis (timeout 1 s).
- * Retorna o número de amostras efetivamente lidas.
+ * inmp441_driver.h — alias de compatibilidade.
+ * O driver foi fundido em audio_driver.c (I2S0 full-duplex).
+ * Inclua audio_driver.h e use audio_mic_read() no lugar de inmp441_read_samples().
  */
-size_t inmp441_read_samples(int16_t *buf, size_t samples);
+#include "audio_driver.h"
 
-#ifdef __cplusplus
-}
-#endif
+#define inmp441_init()                   audio_init()
+#define inmp441_read_samples(buf, n)     audio_mic_read((buf), (n))

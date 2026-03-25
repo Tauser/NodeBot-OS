@@ -13,7 +13,7 @@
 
 #define SAMPLE_RATE   16000
 #define DMA_BUFFERS   4
-#define DMA_FRAMES    512
+#define DMA_FRAMES    256
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -30,17 +30,14 @@ static uint8_t           s_vol = 80;
 
 void max98357a_init(void)
 {
-    /* I2S_NUM_1 master TX — BCLK/WS compartilhados fisicamente com I2S_NUM_0.
-     * Para uso simultâneo com INMP441, refatorar para I2S0 full-duplex. */
-    i2s_chan_config_t chan = I2S_CHANNEL_DEFAULT_CONFIG(HAL_I2S_AMP_PORT, I2S_ROLE_MASTER);
+    /* I2S_NUM_0 master TX (Full-Duplex com INMP441) */
+    i2s_chan_config_t chan = I2S_CHANNEL_DEFAULT_CONFIG(HAL_I2S_PORT, I2S_ROLE_MASTER);
     chan.dma_desc_num  = DMA_BUFFERS;
     chan.dma_frame_num = DMA_FRAMES;
     ESP_ERROR_CHECK(i2s_new_channel(&chan, &s_tx, NULL));
 
     i2s_std_config_t std = {
         .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
-        /* Stereo: BCLK = 512 kHz (16k × 16bit × 2ch) — MAX98357A trava melhor.
-         * play_pcm envia cada amostra em L e R; amp usa o canal selecionado pelo MODE pin. */
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(
                         I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
@@ -52,10 +49,14 @@ void max98357a_init(void)
             .invert_flags = { 0 },
         },
     };
+    
+    /* Força o slot para 32-bit para coincidir com o clock gerado pelo INMP441 no I2S0 */
+    std.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
+
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_tx, &std));
     ESP_ERROR_CHECK(i2s_channel_enable(s_tx));
 
-    ESP_LOGI(TAG, "MAX98357A OK — %d Hz mono 16-bit I2S1 MASTER", SAMPLE_RATE);
+    ESP_LOGI(TAG, "MAX98357A OK — %d Hz mono 16-bit I2S0 MASTER (Full-Duplex)", SAMPLE_RATE);
 }
 
 /* ─────────────────────────────────────────────────────────────────── */

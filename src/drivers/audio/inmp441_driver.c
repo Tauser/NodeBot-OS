@@ -7,7 +7,7 @@
 #include "esp_err.h"
 
 #define DMA_BUFFERS  4
-#define DMA_FRAMES   511
+#define DMA_FRAMES   256
 
 static const char *TAG = "inmp441";
 
@@ -32,7 +32,7 @@ void inmp441_init(void)
                         I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
-            .bclk = HAL_I2S_MIC_SCK,   /* GPIO44 — [C1] compartilhado UART1_RX */
+            .bclk = HAL_I2S_MIC_SCK,   /* GPIO41 */
             .ws   = HAL_I2S_MIC_WS,    /* GPIO42 */
             .dout = I2S_GPIO_UNUSED,
             .din  = HAL_I2S_MIC_SD,    /* GPIO14 */
