@@ -59,8 +59,9 @@ void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
         const float t = (x == xr) ? 1.0f : (float)(x - xl) / ew_f;
         /* Curvatura parabólica: pico no centro (t=0.5), zero nas bordas */
         const float bow = 4.0f * t * (1.0f - t);
-        int yt = ytl + (int)(t * (float)(ytr - ytl)) - (int)((float)cv_top * bow);
-        int yb = ybl + (int)(t * (float)(ybr - ybl)) + (int)((float)cv_bot * bow);
+        /* roundf em vez de truncar — reduz serrilado nas diagonais */
+        int yt = (int)roundf((float)ytl + t * (float)(ytr - ytl) - (float)cv_top * bow);
+        int yb = (int)roundf((float)ybl + t * (float)(ybr - ybl) + (float)cv_bot * bow);
 
         const int dxl = x - xl;
         const int dxr = xr - x;
@@ -69,28 +70,28 @@ void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
          * Círculo centrado em (xl+rt, ytl+rt), raio rt */
         if (rt > 0 && dxl < rt) {
             const float dx = (float)(dxl - rt);
-            const int clip = ytl + rt - (int)sqrtf((float)(rt * rt) - dx * dx);
+            const int clip = (int)roundf((float)(ytl + rt) - sqrtf((float)(rt * rt) - dx * dx));
             if (yt < clip) yt = clip;
         }
         /* Arredondamento canto superior-direito
          * Círculo centrado em (xr-rt, ytr+rt), raio rt */
         if (rt > 0 && dxr < rt) {
             const float dx = (float)(dxr - rt);
-            const int clip = ytr + rt - (int)sqrtf((float)(rt * rt) - dx * dx);
+            const int clip = (int)roundf((float)(ytr + rt) - sqrtf((float)(rt * rt) - dx * dx));
             if (yt < clip) yt = clip;
         }
         /* Arredondamento canto inferior-esquerdo
          * Círculo centrado em (xl+rb, ybl-rb), raio rb */
         if (rb > 0 && dxl < rb) {
             const float dx = (float)(dxl - rb);
-            const int clip = ybl - rb + (int)sqrtf((float)(rb * rb) - dx * dx);
+            const int clip = (int)roundf((float)(ybl - rb) + sqrtf((float)(rb * rb) - dx * dx));
             if (yb > clip) yb = clip;
         }
         /* Arredondamento canto inferior-direito
          * Círculo centrado em (xr-rb, ybr-rb), raio rb */
         if (rb > 0 && dxr < rb) {
             const float dx = (float)(dxr - rb);
-            const int clip = ybr - rb + (int)sqrtf((float)(rb * rb) - dx * dx);
+            const int clip = (int)roundf((float)(ybr - rb) + sqrtf((float)(rb * rb) - dx * dx));
             if (yb > clip) yb = clip;
         }
 
