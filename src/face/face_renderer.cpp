@@ -166,9 +166,11 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
 
     _spr->fillScreen(FACE_BG_COLOR);
 
-    /* x_off: aproxima os olhos. dx: drift horizontal de micro-movimento. */
-    const int cx_l = EYE_L_CX + (int)p.x_off + dx;
-    const int cx_r = EYE_R_CX - (int)p.x_off + dx;
+    /* x_off: distância inter-ocular (128=padrão). Converte para deslocamento simétrico.
+     * x_shift = (128 - di) / 2 → positivo = olhos mais próximos. */
+    const int x_shift = (128 - (int)p.x_off) / 2;
+    const int cx_l = EYE_L_CX + x_shift + dx;
+    const int cx_r = EYE_R_CX - x_shift + dx;
 
     /* Olho esquerdo — dy de micro-movimento somado ao offset vertical */
     drawEye(cx_l, EYE_CY,

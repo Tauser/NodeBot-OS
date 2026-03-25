@@ -30,6 +30,13 @@ void face_engine_apply_params(const face_params_t *p);
  */
 void face_engine_get_target(face_params_t *out);
 
+/*
+ * Atualiza a posição de olhar do GazeService.
+ * x, y em [-0.8, 0.8]; positivo = direita / baixo.
+ * Thread-safe (spinlock). Aplicado como offset no próximo frame.
+ */
+void face_engine_set_gaze(float x, float y);
+
 #ifdef __cplusplus
 }
 #endif

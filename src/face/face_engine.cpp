@@ -57,7 +57,7 @@ face_params_t FaceEngine::interpParams(const face_params_t &a,
     r.open_r    = lerpF(a.open_r, b.open_r, t);
     r.y_l       = lerp8(a.y_l, b.y_l, t);
     r.y_r       = lerp8(a.y_r, b.y_r, t);
-    r.x_off     = lerp8(a.x_off, b.x_off, t);
+    r.x_off     = lerpu8(a.x_off, b.x_off, t);
     r.rt_top    = lerpu8(a.rt_top, b.rt_top, t);
     r.rb_bot    = lerpu8(a.rb_bot, b.rb_bot, t);
     r.cv_top    = lerp8(a.cv_top, b.cv_top, t);
@@ -125,6 +125,15 @@ void FaceEngine::applyParams(const face_params_t *target)
     taskEXIT_CRITICAL(&_paramMux);
 }
 
+/* ── setGaze ─────────────────────────────────────────────────────────────── */
+void FaceEngine::setGaze(float x, float y)
+{
+    taskENTER_CRITICAL(&_gazeMux);
+    _gaze_x = x;
+    _gaze_y = y;
+    taskEXIT_CRITICAL(&_gazeMux);
+}
+
 /* ── getTarget ───────────────────────────────────────────────────────────── */
 void FaceEngine::getTarget(face_params_t *out)
 {
@@ -187,12 +196,21 @@ void FaceEngine::renderLoop(void)
 
         /* 4. Micro-movimentos — oscilação senoidal suave nos olhos
          *   gaze_x: 0.3 Hz × 1.5 px   gaze_y: 0.2 Hz × 1.0 px (fase 1.2 rad) */
-        const float t_sec  = (float)now_ms * 0.001f;
+        const float t_sec   = (float)now_ms * 0.001f;
         const int   micro_x = (int)roundf(sinf(6.28318f * 0.3f * t_sec) * 1.5f);
         const int   micro_y = (int)roundf(sinf(6.28318f * 0.2f * t_sec + 1.2f) * 1.0f);
 
-        /* 5. Renderiza na drawBuf com micro-offset */
-        drawFrame(cur, micro_x, micro_y);
+        /* 4b. Gaze — offset de olhar do GazeService (escala: ±0.8 → ±20 px / ±12 px) */
+        float gx, gy;
+        taskENTER_CRITICAL(&_gazeMux);
+        gx = _gaze_x;
+        gy = _gaze_y;
+        taskEXIT_CRITICAL(&_gazeMux);
+        const int gaze_px_x = (int)roundf(gx * 25.0f);
+        const int gaze_px_y = (int)roundf(gy * 15.0f);
+
+        /* 5. Renderiza na drawBuf com micro-offset + gaze */
+        drawFrame(cur, micro_x + gaze_px_x, micro_y + gaze_px_y);
 
         /* 5. Empurra para o display físico */
         display_push_sprite(_drawBuf, 0, 0);
@@ -260,4 +278,9 @@ extern "C" void face_engine_apply_params(const face_params_t *p)
 extern "C" void face_engine_get_target(face_params_t *out)
 {
     FaceEngine::instance().getTarget(out);
+}
+
+extern "C" void face_engine_set_gaze(float x, float y)
+{
+    FaceEngine::instance().setGaze(x, y);
 }

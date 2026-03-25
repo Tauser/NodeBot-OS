@@ -43,6 +43,9 @@ public:
     /* Retorna a expressão-alvo atual (_dst). Thread-safe. */
     void getTarget(face_params_t *out);
 
+    /* Atualiza posição de olhar (x, y em [-0.8, 0.8]). Thread-safe. */
+    void setGaze(float x, float y);
+
 private:
     lgfx::LGFX_Sprite *_drawBuf  = nullptr;
     lgfx::LGFX_Sprite *_frontBuf = nullptr;
@@ -59,6 +62,11 @@ private:
     uint32_t      _transDur   = 0;   /* 0 = instantâneo */
 
     portMUX_TYPE  _paramMux = portMUX_INITIALIZER_UNLOCKED;
+
+    /* Posição de olhar do GazeService — atualizada via setGaze(), lida no renderLoop */
+    volatile float _gaze_x = 0.0f;
+    volatile float _gaze_y = 0.0f;
+    portMUX_TYPE   _gazeMux = portMUX_INITIALIZER_UNLOCKED;
 
     uint32_t _frameCount   = 0;
     uint32_t _fpsTimestamp = 0;
