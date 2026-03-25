@@ -58,6 +58,8 @@ face_params_t FaceEngine::interpParams(const face_params_t &a,
     r.y_r       = lerp8(a.y_r, b.y_r, t);
     r.rt_top    = lerpu8(a.rt_top, b.rt_top, t);
     r.rb_bot    = lerpu8(a.rb_bot, b.rb_bot, t);
+    r.cv_top    = lerp8(a.cv_top, b.cv_top, t);
+    r.cv_bot    = lerp8(a.cv_bot, b.cv_bot, t);
     r.color     = lerpRGB565(a.color, b.color, t);
     /* Campos não interpolados — usa valor do destino */
     r.transition_ms = b.transition_ms;

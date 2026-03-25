@@ -48,6 +48,7 @@ static inline uint16_t hlColor(uint16_t c)
 void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
                                    int xl, int ytl, int xr, int ytr,
                                    int ybl, int ybr,
+                                   int cv_top, int cv_bot,
                                    int rt, int rb,
                                    uint16_t color)
 {
@@ -56,8 +57,10 @@ void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
 
     for (int x = xl; x <= xr; x++) {
         const float t = (x == xr) ? 1.0f : (float)(x - xl) / ew_f;
-        int yt = ytl + (int)(t * (float)(ytr - ytl));
-        int yb = ybl + (int)(t * (float)(ybr - ybl));
+        /* Curvatura parabólica: pico no centro (t=0.5), zero nas bordas */
+        const float bow = 4.0f * t * (1.0f - t);
+        int yt = ytl + (int)(t * (float)(ytr - ytl)) - (int)((float)cv_top * bow);
+        int yb = ybl + (int)(t * (float)(ybr - ybl)) + (int)((float)cv_bot * bow);
 
         const int dxl = x - xl;
         const int dxr = xr - x;
@@ -109,6 +112,7 @@ void FaceRenderer::drawEye(int cx, int cy,
                             int8_t bl, int8_t br,
                             float open_f, int8_t oy,
                             uint8_t rt, uint8_t rb,
+                            int8_t cv_top, int8_t cv_bot,
                             uint16_t color)
 {
     /* Clamp abertura */
@@ -147,10 +151,12 @@ void FaceRenderer::drawEye(int cx, int cy,
                    xl - GLOW_EXP, ytl - GLOW_EXP,
                    xr + GLOW_EXP, ytr - GLOW_EXP,
                    ybl + GLOW_EXP, ybr + GLOW_EXP,
+                   (int)cv_top, (int)cv_bot,
                    grt, grb, glowColor(color));
 
     /* 2. Shape principal */
     fillEyeColumns(_spr, xl, ytl, xr, ytr, ybl, ybr,
+                   (int)cv_top, (int)cv_bot,
                    (int)rt, (int)rb, color);
 
     /* 3. Highlight — faixa superior 22% do olho, cor branqueada 22% */
@@ -162,6 +168,7 @@ void FaceRenderer::drawEye(int cx, int cy,
         if (ybr_hl > ybr) ybr_hl = ybr;
         fillEyeColumns(_spr, xl, ytl, xr, ytr,
                        ybl_hl, ybr_hl,
+                       (int)cv_top, 0,
                        (int)rt, 0, hlColor(color));
     }
 }
@@ -180,13 +187,15 @@ void FaceRenderer::draw(const face_params_t &p)
     drawEye(EYE_L_CX, EYE_CY,
             p.tl_l, p.tr_l, p.bl_l, p.br_l,
             p.open_l, p.y_l,
-            p.rt_top, p.rb_bot, p.color);
+            p.rt_top, p.rb_bot,
+            p.cv_top, p.cv_bot, p.color);
 
     /* Olho direito */
     drawEye(EYE_R_CX, EYE_CY,
             p.tl_r, p.tr_r, p.bl_r, p.br_r,
             p.open_r, p.y_r,
-            p.rt_top, p.rb_bot, p.color);
+            p.rt_top, p.rb_bot,
+            p.cv_top, p.cv_bot, p.color);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -36,6 +36,7 @@ private:
                  int8_t tl, int8_t tr, int8_t bl, int8_t br,
                  float open_f, int8_t oy,
                  uint8_t rt, uint8_t rb,
+                 int8_t cv_top, int8_t cv_bot,
                  uint16_t color);
 
     /*
@@ -43,10 +44,12 @@ private:
      *   topo: linha de (xl,ytl) a (xr,ytr)
      *   fundo: linha de (xl,ybl) a (xr,ybr)
      * Arredondamento: raio rt no topo, rb no fundo (clipping circular).
+     * Curvatura: cv_top/cv_bot deslocam o centro da borda em px (parabólico).
      */
     static void fillEyeColumns(lgfx::LGFX_Sprite *spr,
                                 int xl, int ytl, int xr, int ytr,
                                 int ybl, int ybr,
+                                int cv_top, int cv_bot,
                                 int rt, int rb,
                                 uint16_t color);
 };
