@@ -12,15 +12,7 @@ static constexpr int EYE_H    = 78;
 static constexpr int EYE_L_CX = 96;
 static constexpr int EYE_R_CX = 224;
 static constexpr int EYE_CY   = 120;
-static constexpr int GLOW_EXP = 2;   /* expansão do halo em px             */
-
 /* ── Helpers de cor ─────────────────────────────────────────────────────── */
-
-/* Escurece ~50% um RGB565 (glow) */
-static inline uint16_t glowColor(uint16_t c)
-{
-    return (c >> 1) & 0x7BEFu;
-}
 
 /* Mistura 22% branco no RGB565 (highlight) */
 static inline uint16_t hlColor(uint16_t c)
@@ -145,17 +137,7 @@ void FaceRenderer::drawEye(int cx, int cy,
     const int xl = cx - hw;
     const int xr = cx + hw;
 
-    /* 1. Glow — shape 2 px maior, cor escura */
-    const int grt = (int)rt + GLOW_EXP;
-    const int grb = (int)rb + GLOW_EXP;
-    fillEyeColumns(_spr,
-                   xl - GLOW_EXP, ytl - GLOW_EXP,
-                   xr + GLOW_EXP, ytr - GLOW_EXP,
-                   ybl + GLOW_EXP, ybr + GLOW_EXP,
-                   (int)cv_top, (int)cv_bot,
-                   grt, grb, glowColor(color));
-
-    /* 2. Shape principal */
+    /* Shape principal */
     fillEyeColumns(_spr, xl, ytl, xr, ytr, ybl, ybr,
                    (int)cv_top, (int)cv_bot,
                    (int)rt, (int)rb, color);
