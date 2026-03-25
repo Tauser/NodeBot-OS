@@ -14,4 +14,6 @@ idf_component_register(
         touch
         led
         audio
+        gaze_service
+        behavior
 )

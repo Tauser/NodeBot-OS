@@ -13,11 +13,14 @@
 #include "display.h"
 #include "face_engine.h"
 #include "face_debug.h"
+#include "blink_controller.h"
 #include "imu_driver.h"
 #include "touch_driver.h"
 #include "ws2812_driver.h"
-#include "inmp441_driver.h"
-#include "max98357a_driver.h"
+#include "audio_driver.h"
+#include "gaze_service.h"
+#include "state_vector.h"
+#include "idle_behavior.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -132,14 +135,18 @@ esp_err_t app_boot(void)
     //BOOT_STEP_V(5, "face_debug",    face_debug_start_task(NULL));
     // PRODUÇÃO: trocar a linha acima por:
     BOOT_STEP_V(5, "face_render", face_engine_start_task());
+    BOOT_STEP_V(5, "blink_ctrl", blink_controller_init());
     BOOT_STEP  (5, "imu",        imu_init());
     BOOT_STEP_V(5, "touch",      touch_driver_init());
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
-    BOOT_STEP_V(5, "inmp441",    inmp441_init());
-    BOOT_STEP_V(5, "max98357a",  max98357a_init());
+    BOOT_STEP_V(5, "audio",      audio_init());
 
     /* ── STEP 6: EventBus ────────────────────────────────────────────── */
     BOOT_STEP(6, "event_bus", event_bus_init());
+
+    BOOT_STEP_V(6, "gaze_service",  gaze_service_init());
+    BOOT_STEP_V(6, "state_vector",  state_vector_init());
+    BOOT_STEP_V(6, "idle_behavior", idle_behavior_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());
