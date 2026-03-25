@@ -157,7 +157,7 @@ void FaceRenderer::drawEye(int cx, int cy,
 }
 
 /* ── FaceRenderer::draw ─────────────────────────────────────────────────── */
-void FaceRenderer::draw(const face_params_t &p)
+void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
 {
     if (!_spr) {
         ESP_LOGE(TAG, "sprite não inicializado");
@@ -166,21 +166,21 @@ void FaceRenderer::draw(const face_params_t &p)
 
     _spr->fillScreen(FACE_BG_COLOR);
 
-    /* x_off >0 move olho esquerdo p/ direita e direito p/ esquerda */
-    const int cx_l = EYE_L_CX + (int)p.x_off;
-    const int cx_r = EYE_R_CX - (int)p.x_off;
+    /* x_off: aproxima os olhos. dx: drift horizontal de micro-movimento. */
+    const int cx_l = EYE_L_CX + (int)p.x_off + dx;
+    const int cx_r = EYE_R_CX - (int)p.x_off + dx;
 
-    /* Olho esquerdo */
+    /* Olho esquerdo — dy de micro-movimento somado ao offset vertical */
     drawEye(cx_l, EYE_CY,
             p.tl_l, p.tr_l, p.bl_l, p.br_l,
-            p.open_l, p.y_l,
+            p.open_l, (int8_t)((int)p.y_l + dy),
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot, p.color);
 
     /* Olho direito */
     drawEye(cx_r, EYE_CY,
             p.tl_r, p.tr_r, p.bl_r, p.br_r,
-            p.open_r, p.y_r,
+            p.open_r, (int8_t)((int)p.y_r + dy),
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot, p.color);
 }

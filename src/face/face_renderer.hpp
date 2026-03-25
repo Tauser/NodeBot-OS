@@ -22,8 +22,9 @@ class FaceRenderer {
 public:
     void init(lgfx::LGFX_Sprite *spr);
 
-    /* Limpa o sprite e renderiza dois olhos independentes conforme p. */
-    void draw(const face_params_t &p);
+    /* Limpa o sprite e renderiza dois olhos independentes conforme p.
+     * dx/dy: offset de micro-movimento aplicado em render-time (não altera p). */
+    void draw(const face_params_t &p, int dx = 0, int dy = 0);
 
 private:
     lgfx::LGFX_Sprite *_spr = nullptr;

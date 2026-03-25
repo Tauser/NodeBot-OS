@@ -24,6 +24,12 @@ void face_engine_start_task(void);
  */
 void face_engine_apply_params(const face_params_t *p);
 
+/*
+ * Copia a expressão-alvo atual (_dst) para *out. Thread-safe.
+ * Usado pelo blink_controller para salvar/restaurar expressão.
+ */
+void face_engine_get_target(face_params_t *out);
+
 #ifdef __cplusplus
 }
 #endif

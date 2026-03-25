@@ -40,6 +40,9 @@ public:
      */
     void applyParams(const face_params_t *target);
 
+    /* Retorna a expressão-alvo atual (_dst). Thread-safe. */
+    void getTarget(face_params_t *out);
+
 private:
     lgfx::LGFX_Sprite *_drawBuf  = nullptr;
     lgfx::LGFX_Sprite *_frontBuf = nullptr;
@@ -62,7 +65,7 @@ private:
 
     static void sRenderTask(void *arg);
     void renderLoop(void);
-    void drawFrame(const face_params_t &p);
+    void drawFrame(const face_params_t &p, int dx = 0, int dy = 0);
 
     /* Interpolação linear de todos os campos de face_params_t */
     static face_params_t interpParams(const face_params_t &a,

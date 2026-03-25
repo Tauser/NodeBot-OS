@@ -7,6 +7,7 @@
 
 #include <utility>   /* std::swap */
 #include <string.h>  /* memcpy   */
+#include <cmath>     /* sinf      */
 
 static const char *TAG = "FACE";
 
@@ -124,12 +125,21 @@ void FaceEngine::applyParams(const face_params_t *target)
     taskEXIT_CRITICAL(&_paramMux);
 }
 
+/* ── getTarget ───────────────────────────────────────────────────────────── */
+void FaceEngine::getTarget(face_params_t *out)
+{
+    if (!out) return;
+    taskENTER_CRITICAL(&_paramMux);
+    *out = _dst;
+    taskEXIT_CRITICAL(&_paramMux);
+}
+
 /* ── drawFrame ───────────────────────────────────────────────────────────── */
-void FaceEngine::drawFrame(const face_params_t &p)
+void FaceEngine::drawFrame(const face_params_t &p, int dx, int dy)
 {
     /* Re-vincula o renderer ao drawBuf correto após cada swap */
     _renderer.init(_drawBuf);
-    _renderer.draw(p);
+    _renderer.draw(p, dx, dy);
 }
 
 /* ── renderLoop ──────────────────────────────────────────────────────────── */
@@ -175,8 +185,14 @@ void FaceEngine::renderLoop(void)
         _params = cur;
         taskEXIT_CRITICAL(&_paramMux);
 
-        /* 4. Renderiza na drawBuf */
-        drawFrame(cur);
+        /* 4. Micro-movimentos — oscilação senoidal suave nos olhos
+         *   gaze_x: 0.3 Hz × 1.5 px   gaze_y: 0.2 Hz × 1.0 px (fase 1.2 rad) */
+        const float t_sec  = (float)now_ms * 0.001f;
+        const int   micro_x = (int)roundf(sinf(6.28318f * 0.3f * t_sec) * 1.5f);
+        const int   micro_y = (int)roundf(sinf(6.28318f * 0.2f * t_sec + 1.2f) * 1.0f);
+
+        /* 5. Renderiza na drawBuf com micro-offset */
+        drawFrame(cur, micro_x, micro_y);
 
         /* 5. Empurra para o display físico */
         display_push_sprite(_drawBuf, 0, 0);
@@ -239,4 +255,9 @@ extern "C" void face_engine_start_task(void)
 extern "C" void face_engine_apply_params(const face_params_t *p)
 {
     FaceEngine::instance().applyParams(p);
+}
+
+extern "C" void face_engine_get_target(face_params_t *out)
+{
+    FaceEngine::instance().getTarget(out);
 }
