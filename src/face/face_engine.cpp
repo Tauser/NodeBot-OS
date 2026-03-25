@@ -56,6 +56,7 @@ face_params_t FaceEngine::interpParams(const face_params_t &a,
     r.open_r    = lerpF(a.open_r, b.open_r, t);
     r.y_l       = lerp8(a.y_l, b.y_l, t);
     r.y_r       = lerp8(a.y_r, b.y_r, t);
+    r.x_off     = lerp8(a.x_off, b.x_off, t);
     r.rt_top    = lerpu8(a.rt_top, b.rt_top, t);
     r.rb_bot    = lerpu8(a.rb_bot, b.rb_bot, t);
     r.cv_top    = lerp8(a.cv_top, b.cv_top, t);

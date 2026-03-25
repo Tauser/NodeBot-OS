@@ -183,15 +183,19 @@ void FaceRenderer::draw(const face_params_t &p)
 
     _spr->fillScreen(FACE_BG_COLOR);
 
+    /* x_off >0 move olho esquerdo p/ direita e direito p/ esquerda */
+    const int cx_l = EYE_L_CX + (int)p.x_off;
+    const int cx_r = EYE_R_CX - (int)p.x_off;
+
     /* Olho esquerdo */
-    drawEye(EYE_L_CX, EYE_CY,
+    drawEye(cx_l, EYE_CY,
             p.tl_l, p.tr_l, p.bl_l, p.br_l,
             p.open_l, p.y_l,
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot, p.color);
 
     /* Olho direito */
-    drawEye(EYE_R_CX, EYE_CY,
+    drawEye(cx_r, EYE_CY,
             p.tl_r, p.tr_r, p.bl_r, p.br_r,
             p.open_r, p.y_r,
             p.rt_top, p.rb_bot,
