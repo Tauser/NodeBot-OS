@@ -1,0 +1,71 @@
+#pragma once
+
+#include <LovyanGFX.hpp>
+#include "face_engine.h"
+#include "face_renderer.hpp"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/portmacro.h"
+
+/*
+ * FaceEngine — motor de renderização facial com double-buffer e interpolação.
+ *
+ * Arquitetura:
+ *   _drawBuf  → sprite ativo de escrita (frame atual)
+ *   _frontBuf → sprite no display (sem rasgo visual)
+ *   Após cada frame: display_push_sprite(_drawBuf) → std::swap()
+ *
+ * Ambos os sprites alocam ~150 KB em PSRAM (320×240×RGB565).
+ * FaceRenderTask roda no Core 1, prioridade 20, loop 50 ms (20 Hz).
+ *
+ * Interpolação de expressões:
+ *   applyParams(target) captura _params (estado atual renderizado) como _src,
+ *   define _dst = target e inicia transição de _dst.transition_ms ms.
+ *   A cada frame, renderLoop() interpola _src→_dst com cubic ease-in-out
+ *   e atualiza _params via spinlock antes de renderizar.
+ */
+class FaceEngine {
+public:
+    static FaceEngine &instance();
+
+    void init(void);
+    void startTask(void);
+
+    /*
+     * Define a próxima expressão-alvo com interpolação suave.
+     * Thread-safe (spinlock). Pode ser chamado de qualquer task/core.
+     * A duração da transição é lida de target->transition_ms.
+     * Se transition_ms == 0, a troca é instantânea no próximo frame.
+     */
+    void applyParams(const face_params_t *target);
+
+private:
+    lgfx::LGFX_Sprite *_drawBuf  = nullptr;
+    lgfx::LGFX_Sprite *_frontBuf = nullptr;
+
+    FaceRenderer  _renderer;
+
+    /* Estado interpolado atual — escrito pelo render task, lido por applyParams */
+    face_params_t _params     = FACE_NEUTRAL;
+
+    /* Transição: _src → _dst em _transDur ms a partir de _transStart */
+    face_params_t _src        = FACE_NEUTRAL;
+    face_params_t _dst        = FACE_NEUTRAL;
+    uint32_t      _transStart = 0;
+    uint32_t      _transDur   = 0;   /* 0 = instantâneo */
+
+    portMUX_TYPE  _paramMux = portMUX_INITIALIZER_UNLOCKED;
+
+    uint32_t _frameCount   = 0;
+    uint32_t _fpsTimestamp = 0;
+
+    static void sRenderTask(void *arg);
+    void renderLoop(void);
+    void drawFrame(const face_params_t &p);
+
+    /* Interpolação linear de todos os campos de face_params_t */
+    static face_params_t interpParams(const face_params_t &a,
+                                      const face_params_t &b,
+                                      float t);
+};
