@@ -24,7 +24,7 @@ public:
 
             cfg.spi_host    = SPI2_HOST;      /* FSPI no ESP32-S3 */
             cfg.spi_mode    = 0;
-            cfg.freq_write  = 20000000;
+            cfg.freq_write  = 40000000;
             cfg.freq_read   = 16000000;
             cfg.spi_3wire   = false;          /* D/C em pino dedicado */
             cfg.use_lock    = true;

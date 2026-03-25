@@ -13,7 +13,7 @@ static LGFX _lcd;
 void display_init(void)
 {
     _lcd.init();
-    _lcd.setRotation(0);
+    _lcd.setRotation(1); /* Define a rotação final logo de cara */
     _lcd.fillScreen(TFT_BLACK);
     ESP_LOGI(TAG, "ST7789 %dx%d @ SPI2 inicializado",
              _lcd.width(), _lcd.height());

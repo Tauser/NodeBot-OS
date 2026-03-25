@@ -10,6 +10,7 @@ idf_component_register(
         sd
         imu
         display
+        face
         touch
         led
         audio

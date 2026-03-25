@@ -12,6 +12,7 @@
 #include "sd_driver.h"
 #include "display.h"
 #include "face_engine.h"
+#include "face_debug.h"
 #include "imu_driver.h"
 #include "touch_driver.h"
 #include "ws2812_driver.h"
@@ -122,8 +123,15 @@ esp_err_t app_boot(void)
 
     /* ── STEP 5: Drivers ─────────────────────────────────────────────── */
     BOOT_STEP_V(5, "display",       display_init());
+    
+    /* Rotação do display: chame a API correspondente do seu driver aqui */
+    // BOOT_STEP_V(5, "display_rot", display_set_rotation(1)); /* Ex: 1 = 90 graus */
+    
     BOOT_STEP_V(5, "face_engine",   face_engine_init());
-    BOOT_STEP_V(5, "face_render",   face_engine_start_task());
+    /* DEBUG: calibração via serial — substitui face_engine_start_task() */
+    //BOOT_STEP_V(5, "face_debug",    face_debug_start_task(NULL));
+    // PRODUÇÃO: trocar a linha acima por:
+    BOOT_STEP_V(5, "face_render", face_engine_start_task());
     BOOT_STEP  (5, "imu",        imu_init());
     BOOT_STEP_V(5, "touch",      touch_driver_init());
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));

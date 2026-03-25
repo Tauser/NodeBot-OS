@@ -7,7 +7,7 @@
 #include "esp_err.h"
 
 #define DMA_BUFFERS  4
-#define DMA_FRAMES   512
+#define DMA_FRAMES   511
 
 static const char *TAG = "inmp441";
 
