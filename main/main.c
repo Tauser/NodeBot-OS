@@ -3,61 +3,17 @@
 #include "esp_log.h"
 
 #include "boot_sequence.h"
-#include "face_engine.h"
+#include "emotion_mapper.h"
 
-static const char *TAG = "test_face";
+static const char *TAG = "main";
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "════════════════════════════════════════");
-    ESP_LOGI(TAG, "  Face Engine — teste EMO/EILIK");
-    ESP_LOGI(TAG, "════════════════════════════════════════");
-
     app_boot();
 
-    /* ── Fase 1: neutro (3 s) ─────────────────────────────────────── */
-    ESP_LOGI(TAG, "[1] NEUTRAL");
-    face_params_t p = FACE_NEUTRAL;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Fase 2: feliz (3 s) ──────────────────────────────────────── */
-    ESP_LOGI(TAG, "[2] HAPPY");
-    p = FACE_HAPPY;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Fase 3: triste (3 s) ─────────────────────────────────────── */
-    ESP_LOGI(TAG, "[3] SAD");
-    p = FACE_SAD;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Fase 4: raiva (3 s) ──────────────────────────────────────── */
-    ESP_LOGI(TAG, "[4] ANGRY");
-    p = FACE_ANGRY;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Fase 5: surpreso (3 s) ───────────────────────────────────── */
-    ESP_LOGI(TAG, "[5] SURPRISED");
-    p = FACE_SURPRISED;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Fase 6: cansado (3 s) ────────────────────────────────────── */
-    ESP_LOGI(TAG, "[6] TIRED");
-    p = FACE_TIRED;
-    face_engine_apply_params(&p);
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    /* ── Loop: neutro fixo — FPS log a cada 5 s ───────────────────── */
-    ESP_LOGI(TAG, "[loop] NEUTRAL — FPS log a cada 5 s");
-    p = FACE_NEUTRAL;
-    face_engine_apply_params(&p);
-
+    /* ── Homologação: expressão fixa para observar gaze/blink isolados ── */
+    emotion_mapper_apply(EMOTION_NEUTRAL, 0);
     for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
