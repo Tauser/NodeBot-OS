@@ -47,10 +47,16 @@ static void blink_task(void *arg)
         face_params_t saved;
         face_engine_get_target(&saved);
 
-        /* ── Fecha ────────────────────────────────────────────────────── */
+        /* ── Fecha — pálpebra desce (BLINK_HIGH: bl/br fecham, y sobe) ── */
         face_params_t blink_close = saved;
         blink_close.open_l        = 0.05f;
         blink_close.open_r        = 0.05f;
+        blink_close.bl_l          = 28;
+        blink_close.br_l          = 28;
+        blink_close.bl_r          = 28;
+        blink_close.br_r          = 28;
+        blink_close.y_l           = -18;
+        blink_close.y_r           = -18;
         blink_close.transition_ms = (uint16_t)BLINK_CLOSE_MS;
         face_engine_apply_params(&blink_close);
 
