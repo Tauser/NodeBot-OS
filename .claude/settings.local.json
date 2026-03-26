@@ -4,7 +4,26 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(cp /d/Projetos/NodeBot/src/drivers/display/face_engine.h /d/Projetos/NodeBot/src/face/face_engine.h)",
+      "Bash(cp /d/Projetos/NodeBot/src/drivers/display/face_engine.hpp /d/Projetos/NodeBot/src/face/face_engine.hpp)",
+      "Bash(cp /d/Projetos/NodeBot/src/drivers/display/face_engine.cpp /d/Projetos/NodeBot/src/face/face_engine.cpp)",
+      "Bash(rm /d/Projetos/NodeBot/src/drivers/display/face_engine.h /d/Projetos/NodeBot/src/drivers/display/face_engine.hpp /d/Projetos/NodeBot/src/drivers/display/face_engine.cpp)",
+      "Bash(for d:*)",
+      "Bash(do)",
+      "Bash(echo \"=== src/drivers/$d/ ===\")",
+      "Read(//d/Projetos/NodeBot/src/drivers/**)",
+      "Bash(done)",
+      "Bash(find /d/Projetos/NodeBot -maxdepth 3 -type d -name *watchdog* -o -type d -name *audio* -o -type d -name *svc_audio*)",
+      "Bash(idf.py build:*)",
+      "Bash(source /c/Espressif/esp-idf/export.sh)",
+      "Bash(cmd.exe /c \"C:\\\\Espressif\\\\esp-idf\\\\export.bat 2>nul && idf.py build 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d D:\\\\Projetos\\\\NodeBot && C:\\\\Espressif\\\\frameworks\\\\esp-idf-v5.5.3\\\\export.bat && idf.py build\")",
+      "Bash(cmd.exe /c \"C:\\\\\\\\Espressif\\\\\\\\frameworks\\\\\\\\esp-idf-v5.5.3\\\\\\\\export.bat && echo EXPORT_OK && cd /d D:\\\\\\\\Projetos\\\\\\\\NodeBot && idf.py build && echo BUILD_OK\" 2>&1)",
+      "Bash(powershell.exe -Command \"cd D:\\\\Projetos\\\\NodeBot; & C:\\\\Espressif\\\\frameworks\\\\esp-idf-v5.5.3\\\\export.bat; idf.py build 2>&1\")",
+      "Read(//c/Espressif//**)",
+      "Read(//mnt/c/**)",
+      "Bash(find /c /mnt/c -name export.bat -maxdepth 6)"
     ]
   }
 }

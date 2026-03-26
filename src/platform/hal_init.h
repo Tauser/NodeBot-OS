@@ -1,22 +1,27 @@
 /*
  * ╔══════════════════════════════════════════════════════════════╗
- * ║              PINAGEM CONGELADA v1.0                          ║
+ * ║              PINAGEM CONGELADA v2.0                          ║
  * ║  Freenove ESP32-S3-WROOM CAM N16R8  ·  ESP-IDF v5.x         ║
  * ╚══════════════════════════════════════════════════════════════╝
  *
  * REGRAS OBRIGATÓRIAS:
  *   R1. Chamar i2c_master_init() ANTES de esp_camera_init()
  *   R2. Não acessar barramento I2C durante captura de frame (camera)
- *   R3. GPIO43/44 são UART0 TX/RX por padrão.
- *       Ativar USB CDC para liberar o par para UART1:
- *         CONFIG_ESP_CONSOLE_USB_CDC=y  (sdkconfig.defaults)
+ *   R3. GPIO43 = UART0_TX, GPIO44 = UART0_RX — console serial (monitor).
+ *       NÃO usar para outros periféricos.
  *   R4. GPIO45 é strapping — se usado no futuro, adicionar pull-down 10 kΩ
  *   R5. GPIO2 está conectado ao LED onboard (LED ON). A presença do LED
  *       pode degradar a sensibilidade do touch T2 — testar SNR na HW real.
+ *   R6. GPIO19/20 são USB D-/D+. Livres enquanto USB CDC estiver desabilitado.
+ *       ⚠ NÃO habilitar CONFIG_ESP_CONSOLE_USB_CDC — conflito com WS2812 e servo.
+ *   R7. GPIO46 é strapping (UART ROM log). Usado como RX após boot — sem problemas
+ *       pois é entrada passiva; não colocar pull-up externo forte neste pino.
+ *   R8. GPIO48 (WS2812 onboard) deixado quieto — DOUT não acessível na placa,
+ *       usar fita externa no GPIO19.
  *
- * CONFLITO [C1] RESOLVIDO:
- *   HAL_I2S_SCK migrado para GPIO41 (livre após ST7789_DC → GPIO45).
- *   GPIO44 agora é exclusivo de HAL_UART1_RX (servos).
+ * CONFLITOS RESOLVIDOS:
+ *   [C1] HAL_I2S_SCK migrado para GPIO41 (livre após ST7789_DC → GPIO45).
+ *   [C2] Servos migrados de GPIO43/44 para GPIO20/46, liberando o console UART0.
  */
 
 #pragma once
@@ -40,22 +45,27 @@
 #define HAL_SD_DATA0        40
 
 /* ──────────────────────────────────────────────────────────────
+ * UART0 — console serial (monitor)  [C2]
+ * Pinos fixos do ESP32-S3; não redirecionar para outros periféricos.
+ * ────────────────────────────────────────────────────────────── */
+#define HAL_UART0_TX        43   /* UART0_TX — console */
+#define HAL_UART0_RX        44   /* UART0_RX — console */
+
+/* ──────────────────────────────────────────────────────────────
  * UART1 — servos SCS0009 × 2 via FE-TTLinker (full-duplex)
  *
- * ⚠ GPIO43 = UART0_TX (U0TXD) por padrão — ver Regra R3
- * ⚠ GPIO44 = UART0_RX (U0RXD) por padrão — ver Regra R3
- * ⚠ GPIO44 compartilhado com HAL_I2S_SCK — ver Conflito [C1]
+ * Migrado de GPIO43/44 → GPIO20/46  [C2]
+ * ⚠ GPIO20 = USB D+ quando USB CDC ativo — ver Regra R6
+ * ⚠ GPIO46 = strapping de log ROM     — ver Regra R7
  * ────────────────────────────────────────────────────────────── */
-#define HAL_UART1_TX        43
-#define HAL_UART1_RX        44   /* [C1] mesmo pino que HAL_I2S_SCK */
+#define HAL_UART1_TX        20
+#define HAL_UART1_RX        46
 #define HAL_UART1_PORT      UART_NUM_1
 #define HAL_UART1_BAUD      1000000 /* SCS0009 padrão: 1 Mbps */
 
 /* ──────────────────────────────────────────────────────────────
  * I2S full-duplex — INMP441 (mic) + MAX98357A (amp)
  * BCLK e WS compartilhados: I2S0 full-duplex, mesma taxa de amostragem
- *
- * ⚠ HAL_I2S_SCK = GPIO44 = HAL_UART1_RX — ver Conflito [C1]
  * ────────────────────────────────────────────────────────────── */
 #define HAL_I2S_SCK         41   /* BCLK compartilhado mic + amp — GPIO41 livre após DC→GPIO45 */
 #define HAL_I2S_WS          42   /* LRCK/WS compartilhado mic + amp */
@@ -88,10 +98,22 @@
 #define HAL_I2C_FREQ_HZ     400000
 
 /* ──────────────────────────────────────────────────────────────
- * RMT — WS2812 cadeia única (onboard → ext_0 → ext_1, 3 LEDs)
+ * RMT — WS2812
+ *
+ * GPIO48 (onboard): deixado quieto — DOUT não acessível na placa.
+ *   Não chamar ws2812_init() para este pino.  [R8]
+ *
+ * GPIO19 (fita externa): cadeia independente.
+ *   Papel dos índices:
+ *     0  — status do sistema (ws2812_set_state)
+ *     1+ — livres para animações / behavior
+ *
+ * ⚠ GPIO19 = USB D- quando USB CDC ativo — ver Regra R6
  * ────────────────────────────────────────────────────────────── */
-#define HAL_RMT_LED         48
-#define HAL_RMT_LED_COUNT   3    /* 1 onboard + 2 externos em série */
+#define HAL_RMT_LED_ONBOARD    48   /* onboard — NÃO USAR, deixado quieto */
+#define HAL_RMT_LED            19   /* fita externa — canal ativo          */
+#define HAL_RMT_LED_COUNT      2    /* número de LEDs na fita externa       */
+#define HAL_RMT_LED_STATUS_IDX 0    /* índice do LED de status na fita      */
 
 /* ──────────────────────────────────────────────────────────────
  * Touch capacitivo nativo ESP32-S3 — fitas de cobre, 4 zonas
@@ -140,30 +162,32 @@
  * TABELA DE GPIOs USADOS
  * ════════════════════════════════════════════════════════════════
  *
- *  GPIO │ Define                  │ Periférico          │ Nota
- *  ─────┼─────────────────────────┼─────────────────────┼────────────────────
- *     1 │ HAL_I2S_AMP_DIN         │ MAX98357A TX data   │
- *     2 │ HAL_TOUCH_PIN_1         │ Touch T2 (nativo)   │ ⚠ LED onboard R5
- *     4 │ HAL_I2C_SDA             │ I2C / OV2640 SIOD   │ ⚠ compartilhado
- *     5 │ HAL_I2C_SCL             │ I2C / OV2640 SIOC   │ ⚠ compartilhado
- *    14 │ HAL_I2S_MIC_SD          │ INMP441 RX data     │
- *    21 │ HAL_SPI_MOSI            │ ST7789 MOSI         │
- *    38 │ HAL_SD_CMD              │ SDMMC CMD           │ fixo placa
- *    39 │ HAL_SD_CLK              │ SDMMC CLK           │ fixo placa
- *    40 │ HAL_SD_DATA0            │ SDMMC DATA0         │ fixo placa
- *    45 │ HAL_ST7789_DC           │ ST7789 D/C          │ ⚠ strapping — ok pós-boot
- *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
- *    42 │ HAL_I2S_WS              │ I2S LRCK (shared)   │
- *    43 │ HAL_UART1_TX            │ Servo UART1 TX      │ ⚠ UART0_TX R3
- *    41 │ HAL_I2S_SCK             │ I2S BCLK            │ livre após DC→GPIO45
- *    44 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ R3 — [C1] resolvido
- *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
- *    48 │ HAL_RMT_LED             │ WS2812 × 3          │ fixo placa
- * ─────┴─────────────────────────┴─────────────────────┴────────────────────
- *  Livres  : nenhum — todos os 9 GPIOs disponíveis estão em uso
+ *  GPIO │ Define                  │ Periférico            │ Nota
+ *  ─────┼─────────────────────────┼───────────────────────┼──────────────────────
+ *     1 │ HAL_I2S_AMP_DIN         │ MAX98357A TX data      │
+ *     2 │ HAL_TOUCH_PIN_1         │ Touch T2 (nativo)      │ ⚠ LED onboard R5
+ *     4 │ HAL_I2C_SDA             │ I2C / OV2640 SIOD      │ ⚠ compartilhado
+ *     5 │ HAL_I2C_SCL             │ I2C / OV2640 SIOC      │ ⚠ compartilhado
+ *    14 │ HAL_I2S_MIC_SD          │ INMP441 RX data        │
+ *    19 │ HAL_RMT_LED             │ WS2812 fita externa    │ ⚠ USB D- se CDC ativo R6
+ *    20 │ HAL_UART1_TX            │ Servo UART1 TX         │ ⚠ USB D+ se CDC ativo R6
+ *    21 │ HAL_SPI_MOSI            │ ST7789 MOSI            │
+ *    38 │ HAL_SD_CMD              │ SDMMC CMD              │ fixo placa
+ *    39 │ HAL_SD_CLK              │ SDMMC CLK              │ fixo placa
+ *    40 │ HAL_SD_DATA0            │ SDMMC DATA0            │ fixo placa
+ *    41 │ HAL_I2S_SCK             │ I2S BCLK               │ [C1]
+ *    42 │ HAL_I2S_WS              │ I2S LRCK (shared)      │
+ *    43 │ HAL_UART0_TX            │ Console UART0 TX       │ monitor serial
+ *    44 │ HAL_UART0_RX            │ Console UART0 RX       │ monitor serial
+ *    45 │ HAL_ST7789_DC           │ ST7789 D/C             │ ⚠ strapping — ok pós-boot
+ *    46 │ HAL_UART1_RX            │ Servo UART1 RX         │ ⚠ strapping log R7
+ *    47 │ HAL_SPI_SCK             │ ST7789 SCK             │
+ *    48 │ HAL_RMT_LED_ONBOARD     │ WS2812 onboard (quieto)│ DOUT inacessível R8
+ * ─────┴─────────────────────────┴───────────────────────┴──────────────────────
+ *  Livres  : nenhum
  *  CS/RST  : -1 (ST7789 CS hardwired GND; RST via SWRESET)
  *  PSRAM   : GPIO35-37 internos (indisponível)
- *  USB     : GPIO19-20 não expostos nos headers
+ *  USB CDC : DESABILITADO — GPIO19/20 em uso para WS2812 e servo
  * ════════════════════════════════════════════════════════════════
  *
  * EXEMPLO LovyanGFX (Bus_SPI + Panel_ST7789):

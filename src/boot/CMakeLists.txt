@@ -16,4 +16,8 @@ idf_component_register(
         audio
         gaze_service
         behavior
+        safe_mode
+        motion_safety
+        imu_service
+        touch_service
 )

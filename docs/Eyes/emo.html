@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cozmo Eye Builder V18 - Master Table Edition</title>
+    <style>
+        :root {
+            --bg: #0b0d11; --panel: #161920; --accent: #00e5ff;
+            --text: #e2e8f0; --dim: #64748b; --border: #2d333f;
+            --mono: 'JetBrains Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .root { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 1200px; }
+        .screen-box { background: #000; padding: 12px; border-radius: 20px; border: 3px solid #1a1a1a; box-shadow: 0 0 30px rgba(0, 229, 255, 0.1); position: relative;}
+        canvas { display: block; border-radius: 8px; }
+        .lbl { font-size: 16px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+        .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; width: 100%; background: var(--panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
+        .btn { padding: 5px; border-radius: 4px; border: 1px solid var(--border); background: #1e252e; cursor: pointer; font-size: 9px; color: var(--dim); transition: 0.1s; text-align: center;}
+        .btn.on { border-color: var(--accent); background: rgba(0, 229, 255, 0.1); color: var(--accent); }
+        .row { display: flex; gap: 15px; width: 100%; }
+        .panel { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .ptitle { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; }
+        .sr { display: flex; align-items: center; gap: 10px; }
+        .sr label { font-size: 9px; color: var(--dim); width: 75px; text-transform: uppercase; }
+        select, input[type=color] { background: #0b0d11; color: var(--accent); border: 1px solid var(--border); font-size: 9px; padding: 2px; flex: 1; outline: none;}
+        input[type=range] { flex: 1; height: 3px; background: #334155; appearance: none; outline: none; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        .sr span { font-size: 9px; font-family: var(--mono); color: var(--accent); width: 35px; text-align: right; }
+        .footer { width: 100%; display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
+        .code { font-family: var(--mono); font-size: 10px; background: #000; border: 1px solid var(--border); border-radius: 6px; padding: 15px; color: #4ade80; width: 100%; white-space: pre; overflow-x: auto; line-height: 1.6; }
+        .cpbtn { background: #1e252e; color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 5px; font-size: 10px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="root">
+    <div class="screen-box"><canvas id="c" width="320" height="240"></canvas></div>
+    <div class="lbl" id="lbl">Neutral</div>
+    <div class="grid" id="btns"></div>
+
+    <div class="row">
+        <div class="panel">
+            <div class="ptitle">Olho Esquerdo</div>
+            <div class="sr"><label>topo-esq</label><input type="range" id="ltl" min="-30" max="30" value="0"><span id="vltl">0</span></div>
+            <div class="sr"><label>topo-dir</label><input type="range" id="ltr" min="-30" max="30" value="0"><span id="vltr">0</span></div>
+            <div class="sr"><label>fund-esq</label><input type="range" id="lbl2" min="-30" max="30" value="0"><span id="vlbl">0</span></div>
+            <div class="sr"><label>fund-dir</label><input type="range" id="lbr" min="-30" max="30" value="0"><span id="vlbr">0</span></div>
+            <div class="sr"><label>abertura</label><input type="range" id="lop" min="5" max="100" value="100"><span id="vlop">1.00</span></div>
+            <div class="sr"><label>pos-Y</label><input type="range" id="lyy" min="-40" max="40" value="0"><span id="vlyy">0</span></div>
+        </div>
+
+        <div class="panel" style="flex: 1.2; background: rgba(0, 229, 255, 0.03);">
+            <div class="ptitle">Tabela Mestre (EMO)</div>
+            <div class="sr">
+                <label>Pupila</label>
+                <select id="pType">
+                    <option value="1">Circle (Normal)</option>
+                    <option value="2">Star (Very Happy)</option>
+                    <option value="3">Heart (Love)</option>
+                    <option value="4">X (Dead)</option>
+                    <option value="5">Spiral (Dizzy)</option>
+                    <option value="6">Diamond (Confused)</option>
+                </select>
+            </div>
+            <div class="sr">
+                <label>Highlight</label>
+                <select id="hType">
+                    <option value="0">None</option>
+                    <option value="1">Dot (Neutral)</option>
+                    <option value="2">Double (Happy)</option>
+                    <option value="3">Sparkle (Awe)</option>
+                </select>
+            </div>
+            <div class="sr">
+                <label>Acento</label>
+                <select id="aType">
+                    <option value="0">None</option>
+                    <option value="1">Tear (Sad)</option>
+                    <option value="2">Sweat (Hot)</option>
+                    <option value="3">ZZZ (Sleeping)</option>
+                </select>
+            </div>
+            <div class="sr"><label>Cor Acento</label><input type="color" id="aCol" value="#ff88cc"></div>
+            <div style="margin-top:5px; border-top: 1px solid var(--border); padding-top:10px;">
+                <div class="sr"><label>distância</label><input type="range" id="gdi" min="60" max="220" value="93"><span id="vgdi">93</span></div>
+                <div class="sr"><label>r-topo</label><input type="range" id="grt" min="4" max="36" value="20"><span id="vgrt">20</span></div>
+                <div class="sr"><label>cv-fundo</label><input type="range" id="gcb" min="-30" max="30" value="3"><span id="vgcb">3</span></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="ptitle">Olho Direito</div>
+            <div class="sr"><label>topo-esq</label><input type="range" id="rtl" min="-30" max="30" value="0"><span id="vrtl">0</span></div>
+            <div class="sr"><label>topo-dir</label><input type="range" id="rtr" min="-30" max="30" value="0"><span id="vrtr">0</span></div>
+            <div class="sr"><label>fund-esq</label><input type="range" id="rbl" min="-30" max="30" value="0"><span id="vrbl">0</span></div>
+            <div class="sr"><label>fund-dir</label><input type="range" id="rbr" min="-30" max="30" value="0"><span id="vrbr">0</span></div>
+            <div class="sr"><label>abertura</label><input type="range" id="rop" min="5" max="100" value="100"><span id="vrop">1.00</span></div>
+            <div class="sr"><label>pos-Y</label><input type="range" id="ryy" min="-40" max="40" value="0"><span id="vryy">0</span></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <label style="font-size:10px; color:var(--dim); cursor:pointer"><input type="checkbox" id="sync" checked> Mirror Mode</label>
+        <div style="display:flex; gap:8px;">
+            <button class="cpbtn" onclick="exportFullJSON()">Backup</button>
+            <button class="cpbtn" onclick="copyCode()" style="background:var(--accent); color:#000;">Copiar C++ (24 campos)</button>
+        </div>
+    </div>
+    <div class="code" id="codeout"></div>
+</div>
+
+<script>
+const EW=82, EH=78, EY=120, CYN='#00e5ff';
+let activeIdx = 0;
+const DB_KEY = 'cozmo_eyes_V18_MASTER';
+
+// BASEADO NA SUA TABELA MESTRE
+const INITIAL_EXPRS = [
+  {n:'Neutral', pL:{tl:0,tr:0,bl:0,br:0,op:1,y:0}, pR:{tl:0,tr:0,bl:0,br:0,op:1,y:0}, g:{di:93,rt:20,rb:20,ct:3,cb:3,ms:500,pr:0,pT:1,hT:1,aT:0,aC:'#ffffff'}},
+  {n:'Happy', pL:{tl:14,tr:14,bl:-8,br:-8,op:0.5}, pR:{tl:14,tr:14,bl:-8,br:-8,op:0.5}, g:{di:128,rt:4,rb:4,ct:15,cb:-15,ms:400,pr:0,pT:2,hT:2,aT:0,aC:'#ffff00'}},
+  {n:'Love', pL:{tl:5,tr:5,bl:0,br:0,op:0.55}, pR:{tl:5,tr:5,bl:0,br:0,op:0.55}, g:{di:110,rt:20,rb:20,ct:0,cb:0,ms:500,pr:0,pT:3,hT:0,aT:0,aC:'#ff88cc'}},
+  {n:'Angry', pL:{tl:12,tr:30,bl:0,br:0,op:0.38}, pR:{tl:30,tr:12,bl:0,br:0,op:0.38}, g:{di:92,rt:8,rb:11,ct:0,cb:0,ms:400,pr:0,pT:1,hT:0,aT:0,aC:'#ff0000'}},
+  {n:'Dead', pL:{tl:0,tr:0,bl:0,br:0,op:0.7}, pR:{tl:0,tr:0,bl:0,br:0,op:0.7}, g:{di:100,rt:10,rb:10,ct:0,cb:0,ms:500,pr:0,pT:4,hT:0,aT:0,aC:'#ffffff'}},
+  {n:'Sad', pL:{tl:18,tr:-22,bl:-8,br:-5,op:0.55}, pR:{tl:-22,tr:18,bl:-5,br:-8,op:0.55}, g:{di:128,rt:10,rb:10,ct:-8,cb:-7,ms:600,pr:0,pT:1,hT:1,aT:1,aC:'#00e5ff'}},
+];
+
+let EXPRS = JSON.parse(localStorage.getItem(DB_KEY)) || INITIAL_EXPRS;
+
+function drawHeart(ctx, x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + size/4);
+    ctx.bezierCurveTo(x, y, x - size/2, y, x - size/2, y + size/4);
+    ctx.bezierCurveTo(x - size/2, y + size/2, x, y + size*0.75, x, y + size);
+    ctx.bezierCurveTo(x, y + size*0.75, x + size/2, y + size/2, x + size/2, y + size/4);
+    ctx.bezierCurveTo(x + size/2, y, x, y, x, y + size/4);
+    ctx.fill();
+}
+
+function drawStar(ctx, x, y, r, p, m) {
+    ctx.beginPath(); ctx.moveTo(x, y + r);
+    for (let i = 0; i < p; i++) {
+        ctx.rotate(Math.PI / p); ctx.lineTo(x, y + (r * m));
+        ctx.rotate(Math.PI / p); ctx.lineTo(x, y + r);
+    } ctx.fill();
+}
+
+function drawEye(ctx, cx, cy, p, g) {
+    const h = Math.max(4, EH * p.op), w = EW, y0 = cy - h / 2 + p.y, y1 = cy + h / 2 + p.y;
+    const rt = Math.min(g.rt, h * 0.45, w * 0.45), rb = Math.min(g.rb, h * 0.45, w * 0.45);
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx - w/2 + rt, y0);
+    ctx.quadraticCurveTo(cx, y0 - g.ct, cx + w/2 - rt, y0);
+    ctx.arcTo(cx + w/2, y0, cx + w/2, y0 + rt, rt);
+    ctx.lineTo(cx + w/2, y1 - rb);
+    ctx.arcTo(cx + w/2, y1, cx + w/2 - rb, y1, rb);
+    ctx.quadraticCurveTo(cx, y1 + g.cb, cx - w/2 + rb, y1);
+    ctx.arcTo(cx - w/2, y1, cx - w/2, y1 - rb, rb);
+    ctx.lineTo(cx - w/2, y0 + rt);
+    ctx.arcTo(cx - w/2, y0, cx - w/2 + rt, y0, rt);
+    ctx.closePath();
+    
+    // Base Eye
+    ctx.fillStyle = CYN; ctx.fill();
+    ctx.clip(); // Limita a pupila ao olho
+
+    // Pupil
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    if(g.pT == 1) { ctx.beginPath(); ctx.arc(cx, cy+p.y, 15, 0, Math.PI*2); ctx.fill(); }
+    if(g.pT == 2) { ctx.save(); ctx.translate(cx, cy+p.y-10); drawStar(ctx, 0, 0, 5, 18, 0.5); ctx.restore(); }
+    if(g.pT == 3) { drawHeart(ctx, cx, cy+p.y-15, 25); }
+    if(g.pT == 4) { ctx.strokeStyle="black"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cx-10,cy+p.y-10); ctx.lineTo(cx+10,cy+p.y+10); ctx.moveTo(cx+10,cy+p.y-10); ctx.lineTo(cx-10,cy+p.y+10); ctx.stroke(); }
+    
+    // Highlight
+    if(g.hT > 0) {
+        ctx.fillStyle = "white";
+        ctx.beginPath(); ctx.arc(cx+15, cy+p.y-15, (g.hT==3?8:4), 0, Math.PI*2); ctx.fill();
+        if(g.hT == 2) { ctx.beginPath(); ctx.arc(cx-10, cy+p.y+10, 3, 0, Math.PI*2); ctx.fill(); }
+    }
+    ctx.restore();
+
+    // Accent (Lágrima/Suor)
+    if(g.aT == 1) { ctx.fillStyle="#42a5f5"; ctx.beginPath(); ctx.arc(cx-w/2, y1+10, 6, 0, Math.PI); ctx.lineTo(cx-w/2, y1); ctx.fill(); }
+}
+
+function render() {
+    const d = readSliders();
+    const ctx = document.getElementById('c').getContext('2d');
+    ctx.clearRect(0,0,320,240); ctx.fillStyle='#000'; ctx.fillRect(0,0,320,240);
+    const cL = 160 - (d.g.di/2), cR = 160 + (d.g.di/2);
+    drawEye(ctx, cL, EY, d.pL, d.g); drawEye(ctx, cR, EY, d.pR, d.g);
+    updateCode(d);
+    EXPRS[activeIdx] = {n: document.getElementById('lbl').textContent, pL: d.pL, pR: d.pR, g: d.g};
+    localStorage.setItem(DB_KEY, JSON.stringify(EXPRS));
+}
+
+function readSliders() {
+    const g=(id)=>parseFloat(document.getElementById(id).value)||0;
+    return {
+        pL:{tl:g('ltl'),tr:g('ltr'),bl:g('lbl2'),br:g('lbr'),op:g('lop')/100,y:g('lyy')},
+        pR:{tl:g('rtl'),tr:g('rtr'),bl:g('rbl'),br:g('rbr'),op:g('rop')/100,y:g('ryy')},
+        g: {di:g('gdi'),rt:g('grt'),rb:g('grt'),ct:0,cb:g('gcb'),ms:500,pr:0, 
+            pT:g('pType'), hT:g('hType'), aT:g('aType'), aC:document.getElementById('aCol').value}
+    };
+}
+
+function updateCode(d) {
+    const code = [d.pL.tl, d.pL.tr, d.pL.bl, d.pL.br, d.pR.tl, d.pR.tr, d.pR.bl, d.pR.br, d.pL.op.toFixed(2), d.pR.op.toFixed(2), d.pL.y, d.pR.y, d.g.di, d.g.rt, d.g.rt, 0, d.g.cb, "FACE_EYE_COLOR", d.g.ms, d.g.pr, d.g.pT, d.g.hT, d.g.aT, "0x"+d.g.aC.slice(1)].join(', ');
+    document.getElementById('codeout').textContent = `{ ${code} }`;
+}
+
+function updateUI(d) {
+    const s=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+    s('ltl',d.pL.tl); s('ltr',d.pL.tr); s('lbl2',d.pL.bl); s('lbr',d.pL.br); s('lop',d.pL.op*100); s('lyy',d.pL.y);
+    s('rtl',d.pR.tl); s('rtr',d.pR.tr); s('rbl',d.pR.bl); s('rbr',d.pR.br); s('rop',d.pR.op*100); s('ryy',d.pR.y);
+    s('gdi',d.g.di); s('grt',d.g.rt); s('gcb',d.g.cb); s('pType',d.g.pT); s('hType',d.g.hT); s('aType',d.g.aT); s('aCol',d.g.aC);
+}
+
+function select(i) {
+    activeIdx = i; document.getElementById('lbl').textContent = EXPRS[i].n;
+    document.querySelectorAll('.btn').forEach((b,idx)=>b.classList.toggle('on', idx===i));
+    updateUI(EXPRS[i]); render();
+}
+
+function exportFullJSON() {
+    const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(EXPRS));
+    a.download = "master_table_backup.json"; a.click();
+}
+
+document.querySelectorAll('input, select').forEach(el => el.oninput = render);
+
+const bc=document.getElementById('btns');
+EXPRS.forEach((ex,i)=>{
+    const b=document.createElement('button'); b.className='btn'; b.textContent=ex.n; b.onclick=()=>select(i); bc.appendChild(b);
+});
+
+window.onload = () => select(0);
+function copyCode(){ navigator.clipboard.writeText(document.getElementById('codeout').textContent); }
+</script>
+</body>
+</html>
