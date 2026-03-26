@@ -20,4 +20,5 @@ idf_component_register(
         motion_safety
         imu_service
         touch_service
+        svc_audio
 )

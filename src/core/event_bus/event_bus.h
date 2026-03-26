@@ -30,8 +30,9 @@ extern "C" {
 #define EVT_IMU_FALL         0x0202   /* legado — usar EVT_MOTION_DETECTED        */
 #define EVT_MOTION_DETECTED  0x0203   /* payload: motion_event_t (imu_service.h) */
 /* Áudio */
-#define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg            */
+#define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg                    */
 #define EVT_AUDIO_KEYWORD    0x0302
+#define EVT_VOICE_ACTIVITY   0x0303   /* payload: voice_activity_event_t (vad.h)     */
 /* LED */
 #define EVT_LED_CMD          0x0401   /* payload: { uint8_t r,g,b,idx }      */
 /* Display */

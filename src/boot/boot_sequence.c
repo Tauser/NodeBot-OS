@@ -26,6 +26,8 @@
 #include "motion_safety_service.h"
 #include "imu_service.h"
 #include "touch_service.h"
+#include "audio_capture.h"
+#include "vad.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -162,6 +164,8 @@ esp_err_t app_boot(void)
     BOOT_STEP_V(6, "motion_safety",   motion_safety_init());
     BOOT_STEP_V(6, "imu_service",     imu_service_init());
     BOOT_STEP_V(6, "touch_service",   touch_service_init());
+    BOOT_STEP_V(6, "vad",             vad_init());
+    BOOT_STEP_V(6, "audio_capture",   audio_capture_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());
