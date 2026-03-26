@@ -23,7 +23,24 @@
       "Bash(powershell.exe -Command \"cd D:\\\\Projetos\\\\NodeBot; & C:\\\\Espressif\\\\frameworks\\\\esp-idf-v5.5.3\\\\export.bat; idf.py build 2>&1\")",
       "Read(//c/Espressif//**)",
       "Read(//mnt/c/**)",
-      "Bash(find /c /mnt/c -name export.bat -maxdepth 6)"
+      "Bash(find /c /mnt/c -name export.bat -maxdepth 6)",
+      "Bash(find C:/esp/v5.5.3 -path *sr* -name *.h)",
+      "Bash(find C:/esp/v5.5.3 -type d -name *esp-sr* -o -name *sr*)",
+      "Bash(find C:/esp/v5.5.3 -type d -name *components*)",
+      "Bash(grep -r \"esp_wn_iface\\\\|wakenet\" C:/esp/v5.5.3/esp-idf/components --include=*.h)",
+      "Bash(xargs grep:*)",
+      "Bash(find D:/Projetos/NodeBot/src -type f \\\\\\(-name *.h -o -name *.c -o -name *.cpp \\\\\\))",
+      "Bash(grep -r \"wake\\\\|keyword\\\\|WN_\\\\|wn_\" D:/Projetos/NodeBot/src --include=*.h --include=*.c --include=*.cpp)",
+      "Bash(grep -r \"esp-sr\\\\|wakenet\\\\|voice.*recogn\" D:/Projetos/NodeBot --include=*.txt --include=*.yml --include=*.md)",
+      "Bash(find C:/esp/v5.5.3 -name esp_sr* -o -name *wakenet*)",
+      "Bash(find C:/esp/v5.5.3/esp-idf/components -type f -name *.h)",
+      "Bash(grep -r \"ESP_SR\\\\|esp-sr\" C:/esp/v5.5.3 --include=*.cmake --include=CMakeLists.txt)",
+      "Bash(find D:/Projetos/NodeBot -type f \\\\\\(-name *.md -o -name *.txt \\\\\\))",
+      "Bash(find C:/esp/v5.5.3 -path *include* -name *.h)",
+      "Bash(grep -r \"detect\\\\|Detect\\\\|DETECT\" C:/esp/v5.5.3/esp-idf/components/driver --include=*.h)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.espressif.com)",
+      "Bash(find D:/Projetos/NodeBot -name idf_component.yml -o -name esp_sr*)"
     ]
   }
 }

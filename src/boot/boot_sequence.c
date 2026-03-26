@@ -29,6 +29,7 @@
 #include "audio_capture.h"
 #include "vad.h"
 #include "audio_feedback.h"
+#include "wake_word.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -168,6 +169,12 @@ esp_err_t app_boot(void)
     BOOT_STEP_V(6, "vad",             vad_init());
     BOOT_STEP_V(6, "audio_capture",   audio_capture_init());
     BOOT_STEP  (6, "audio_feedback",  audio_feedback_init());
+    /* wake_word_init: passa NULL/0 — modelo linkado via menuconfig esp-sr */
+    if (!wake_word_init(NULL, 0)) {
+        ESP_LOGW(TAG, "[STEP 6] wake_word: esp-sr indisponível — wake word desativado");
+    } else {
+        ESP_LOGI(TAG, "[STEP 6] wake_word init_ok");
+    }
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());

@@ -1,6 +1,7 @@
 #include "audio_capture.h"
 #include "audio_driver.h"
 #include "vad.h"
+#include "wake_word.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -27,10 +28,6 @@ static void audio_capture_task(void *arg)
 
     int16_t tmp[AUDIO_BLOCK_SAMPLES];
 
-    /* DEBUG stack — remover após confirmar */
-    ESP_LOGI(TAG, "stack HWM inicial: %u words livres",
-             (unsigned)uxTaskGetStackHighWaterMark(NULL));
-
     for (;;) {
         /* audio_mic_read lê no máx 256 amostras por chamada */
         size_t got = audio_mic_read(tmp, AUDIO_BLOCK_SAMPLES);
@@ -46,8 +43,11 @@ static void audio_capture_task(void *arg)
 
         memcpy(s_ring[slot], tmp, got * sizeof(int16_t));
 
-        /* Passa apenas as amostras reais para o VAD */
+        /* VAD e Wake Word processam o mesmo bloco */
         vad_process_block(tmp, got);
+        if (wake_word_is_ready()) {
+            wake_word_feed(tmp, got);
+        }
     }
 }
 

@@ -39,8 +39,10 @@ extern "C" {
 #define EVT_DISPLAY_CMD      0x0501
 /* Gaze */
 #define EVT_GAZE_UPDATE      0x0601   /* payload: gaze_event_t { float x, y } */
+/* Wake word */
+#define EVT_WAKE_WORD         0x0701  /* payload: wake_word_event_t (wake_word.h) */
 /* Servo / Motion Safety */
-#define EVT_SERVO_BLOCKED     0x0701  /* payload: servo_blocked_event_t      */
+#define EVT_SERVO_BLOCKED     0x0801  /* payload: servo_blocked_event_t      */
 /* Sistema */
 #define EVT_SYS_LOWBAT        0x0F01
 #define EVT_SYS_ERROR         0x0F02  /* payload: uint32_t error_code        */
