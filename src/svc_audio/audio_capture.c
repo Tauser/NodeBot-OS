@@ -27,7 +27,12 @@ static void audio_capture_task(void *arg)
 
     int16_t tmp[AUDIO_BLOCK_SAMPLES];
 
+    /* DEBUG stack — remover após confirmar */
+    ESP_LOGI(TAG, "stack HWM inicial: %u words livres",
+             (unsigned)uxTaskGetStackHighWaterMark(NULL));
+
     for (;;) {
+        /* audio_mic_read lê no máx 256 amostras por chamada */
         size_t got = audio_mic_read(tmp, AUDIO_BLOCK_SAMPLES);
         if (got == 0) continue;
 
@@ -39,10 +44,10 @@ static void audio_capture_task(void *arg)
         if (s_block_count < AUDIO_RING_BLOCKS) s_block_count++;
         xSemaphoreGive(s_mutex);
 
-        memcpy(s_ring[slot], tmp, sizeof(tmp));
+        memcpy(s_ring[slot], tmp, got * sizeof(int16_t));
 
-        /* Passa o bloco direto para o VAD */
-        vad_process_block(tmp, AUDIO_BLOCK_SAMPLES);
+        /* Passa apenas as amostras reais para o VAD */
+        vad_process_block(tmp, got);
     }
 }
 
@@ -66,7 +71,7 @@ void audio_capture_init(void)
     }
 
     xTaskCreatePinnedToCore(audio_capture_task, "AudioCap",
-                            4096, NULL, 14, NULL, 0);
+                            6144, NULL, 14, NULL, 0);
 
     ESP_LOGI(TAG,
              "AudioCaptureTask Core 0 pri 14  ring=%u blocos  psram=%u bytes",
