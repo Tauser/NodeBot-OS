@@ -40,7 +40,9 @@
       "Bash(grep -r \"detect\\\\|Detect\\\\|DETECT\" C:/esp/v5.5.3/esp-idf/components/driver --include=*.h)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:docs.espressif.com)",
-      "Bash(find D:/Projetos/NodeBot -name idf_component.yml -o -name esp_sr*)"
+      "Bash(find D:/Projetos/NodeBot -name idf_component.yml -o -name esp_sr*)",
+      "Bash(find D:/Projetos/NodeBot/src/services/gaze_service -type f -name *.h -o -name *.c -o -name *.cpp)",
+      "Bash(find D:/Projetos/NodeBot/src/models -type f -name *.h -o -name *.c -o -name *.cpp)"
     ]
   }
 }

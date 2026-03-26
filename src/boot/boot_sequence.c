@@ -30,6 +30,7 @@
 #include "vad.h"
 #include "audio_feedback.h"
 #include "wake_word.h"
+#include "behavior_engine.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -176,8 +177,11 @@ esp_err_t app_boot(void)
         ESP_LOGI(TAG, "[STEP 6] wake_word init_ok");
     }
 
-    /* ── STEP 7: PowerManager ────────────────────────────────────────── */
-    BOOT_STEP(7, "power_manager", power_manager_init());
+    /* ── STEP 7: BehaviorEngine ─────────────────────────────────────── */
+    BOOT_STEP_V(7, "behavior_engine", behavior_engine_init());
+
+    /* ── STEP 8: PowerManager ────────────────────────────────────────── */
+    BOOT_STEP(8, "power_manager", power_manager_init());
 
     /* ── Resultado ───────────────────────────────────────────────────── */
     if (s_first_err == ESP_OK) {
