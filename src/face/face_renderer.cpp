@@ -23,6 +23,23 @@ static inline uint16_t hlColor(uint16_t c)
     return (uint16_t)((r << 11) | (g << 5) | b);
 }
 
+static inline float clampf_local(float v, float lo, float hi)
+{
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+/* Escala uma cor RGB565 contra fundo preto para bordas parciais simples */
+static inline uint16_t scaleColor565(uint16_t c, float alpha)
+{
+    if (alpha <= 0.0f) return 0u;
+    if (alpha >= 1.0f) return c;
+
+    const uint8_t r = (uint8_t)roundf(((float)((c >> 11) & 0x1Fu)) * alpha);
+    const uint8_t g = (uint8_t)roundf(((float)((c >>  5) & 0x3Fu)) * alpha);
+    const uint8_t b = (uint8_t)roundf(((float)((c      ) & 0x1Fu)) * alpha);
+    return (uint16_t)((r << 11) | (g << 5) | b);
+}
+
 /* ── fillEyeColumns ─────────────────────────────────────────────────────── */
 /*
  * Preenche o quadrilátero:
@@ -51,9 +68,8 @@ void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
         const float t = (x == xr) ? 1.0f : (float)(x - xl) / ew_f;
         /* Curvatura parabólica: pico no centro (t=0.5), zero nas bordas */
         const float bow = 4.0f * t * (1.0f - t);
-        /* roundf em vez de truncar — reduz serrilado nas diagonais */
-        int yt = (int)roundf((float)ytl + t * (float)(ytr - ytl) - (float)cv_top * bow);
-        int yb = (int)roundf((float)ybl + t * (float)(ybr - ybl) + (float)cv_bot * bow);
+        float yt_f = (float)ytl + t * (float)(ytr - ytl) - (float)cv_top * bow;
+        float yb_f = (float)ybl + t * (float)(ybr - ybl) + (float)cv_bot * bow;
 
         const int dxl = x - xl;
         const int dxr = xr - x;
@@ -62,33 +78,50 @@ void FaceRenderer::fillEyeColumns(lgfx::LGFX_Sprite *spr,
          * Círculo centrado em (xl+rt, ytl+rt), raio rt */
         if (rt > 0 && dxl < rt) {
             const float dx = (float)(dxl - rt);
-            const int clip = (int)roundf((float)(ytl + rt) - sqrtf((float)(rt * rt) - dx * dx));
-            if (yt < clip) yt = clip;
+            const float clip = (float)(ytl + rt) - sqrtf((float)(rt * rt) - dx * dx);
+            if (yt_f < clip) yt_f = clip;
         }
         /* Arredondamento canto superior-direito
          * Círculo centrado em (xr-rt, ytr+rt), raio rt */
         if (rt > 0 && dxr < rt) {
             const float dx = (float)(dxr - rt);
-            const int clip = (int)roundf((float)(ytr + rt) - sqrtf((float)(rt * rt) - dx * dx));
-            if (yt < clip) yt = clip;
+            const float clip = (float)(ytr + rt) - sqrtf((float)(rt * rt) - dx * dx);
+            if (yt_f < clip) yt_f = clip;
         }
         /* Arredondamento canto inferior-esquerdo
          * Círculo centrado em (xl+rb, ybl-rb), raio rb */
         if (rb > 0 && dxl < rb) {
             const float dx = (float)(dxl - rb);
-            const int clip = (int)roundf((float)(ybl - rb) + sqrtf((float)(rb * rb) - dx * dx));
-            if (yb > clip) yb = clip;
+            const float clip = (float)(ybl - rb) + sqrtf((float)(rb * rb) - dx * dx);
+            if (yb_f > clip) yb_f = clip;
         }
         /* Arredondamento canto inferior-direito
          * Círculo centrado em (xr-rb, ybr-rb), raio rb */
         if (rb > 0 && dxr < rb) {
             const float dx = (float)(dxr - rb);
-            const int clip = (int)roundf((float)(ybr - rb) + sqrtf((float)(rb * rb) - dx * dx));
-            if (yb > clip) yb = clip;
+            const float clip = (float)(ybr - rb) + sqrtf((float)(rb * rb) - dx * dx);
+            if (yb_f > clip) yb_f = clip;
         }
 
-        if (yt <= yb) {
-            spr->drawFastVLine(x, yt, yb - yt + 1, color);
+        if (yt_f > yb_f) {
+            continue;
+        }
+
+        const int top_px = (int)floorf(yt_f);
+        const int bot_px = (int)floorf(yb_f);
+
+        if (top_px == bot_px) {
+            const float cov = clampf_local(yb_f - yt_f, 0.0f, 1.0f);
+            if (cov > 0.0f) {
+                spr->drawPixel(x, top_px, scaleColor565(color, cov));
+            }
+            continue;
+        }
+
+        const int fill_y = top_px;
+        const int fill_h = bot_px - fill_y + 1;
+        if (fill_h > 0) {
+            spr->drawFastVLine(x, fill_y, fill_h, color);
         }
     }
 }
@@ -114,7 +147,26 @@ void FaceRenderer::drawEye(int cx, int cy,
 
     const int hw = EYE_W / 2;
     int h = (int)((float)EYE_H * open_f);
-    if (h < 4) h = 4;
+    if (h < 6) h = 6;
+
+    /* Para olhos estreitos, simplifica progressivamente a geometria para
+     * evitar que curvatura e cantos comprimidos criem leitura de "blink". */
+    if (h <= 18) {
+        cv_top /= 2;
+        cv_bot /= 2;
+    }
+    if (h <= 14) {
+        rt = (uint8_t)((int)rt * 2 / 3);
+        rb = (uint8_t)((int)rb * 2 / 3);
+    }
+    if (h <= 10) {
+        cv_top = 0;
+        cv_bot = 0;
+    }
+    if (h <= 8) {
+        rt = 0;
+        rb = 0;
+    }
 
     /* Clamp raios para não exceder dimensões do olho */
     if ((int)rt > hw)  rt = (uint8_t)hw;
@@ -142,18 +194,8 @@ void FaceRenderer::drawEye(int cx, int cy,
                    (int)cv_top, (int)cv_bot,
                    (int)rt, (int)rb, color);
 
-    /* 3. Highlight — faixa superior 22% do olho, cor branqueada 22% */
-    const int hl_h = (int)((float)h * 0.22f);
-    if (hl_h > 1) {
-        int ybl_hl = ytl + hl_h;
-        int ybr_hl = ytr + hl_h;
-        if (ybl_hl > ybl) ybl_hl = ybl;
-        if (ybr_hl > ybr) ybr_hl = ybr;
-        fillEyeColumns(_spr, xl, ytl, xr, ytr,
-                       ybl_hl, ybr_hl,
-                       (int)cv_top, 0,
-                       (int)rt, 0, hlColor(color));
-    }
+    /* Highlight desativado temporariamente:
+     * a faixa superior estava criando uma divisao visual interna no olho. */
 }
 
 /* ── FaceRenderer::draw ─────────────────────────────────────────────────── */

@@ -39,6 +39,70 @@ static inline uint16_t lerpRGB565(uint16_t a, uint16_t b, float t)
     return (uint16_t)((r << 11) | (g << 5) | bl);
 }
 
+static inline bool params_need_runtime_floor(const face_params_t &p)
+{
+    return (p.open_l <= 0.24f) && (p.open_r <= 0.24f);
+}
+
+static inline face_params_t apply_runtime_floor(face_params_t p)
+{
+    if (p.open_l < 0.34f) p.open_l = 0.34f;
+    if (p.open_r < 0.34f) p.open_r = 0.34f;
+    if (p.x_off < 108u) p.x_off = 108u;
+    return p;
+}
+
+static void draw_alert_overlay(lgfx::LGFX_Sprite *spr, uint32_t now_ms)
+{
+    if (spr == nullptr) {
+        return;
+    }
+
+    if (((now_ms / 260u) % 3u) == 2u) {
+        return;
+    }
+
+    static constexpr uint16_t ALERT_COLOR = FACE_EYE_COLOR;
+    static constexpr int CX = 282;
+    static constexpr int TOP = 18;
+
+    spr->drawLine(CX, TOP, CX - 10, TOP + 18, ALERT_COLOR);
+    spr->drawLine(CX, TOP, CX + 10, TOP + 18, ALERT_COLOR);
+    spr->drawLine(CX - 10, TOP + 18, CX + 10, TOP + 18, ALERT_COLOR);
+    spr->fillRect(CX - 1, TOP + 6, 3, 7, ALERT_COLOR);
+    spr->fillRect(CX - 1, TOP + 15, 3, 3, ALERT_COLOR);
+}
+
+static void draw_sleep_overlay(lgfx::LGFX_Sprite *spr, uint32_t now_ms)
+{
+    if (spr == nullptr) {
+        return;
+    }
+
+    static constexpr uint16_t SLEEP_COLOR = FACE_EYE_COLOR;
+    const int phase = (int)((now_ms / 180u) % 24u);
+    const int bob0 = 104 - phase;
+    const int bob1 = 82 - ((phase + 8) % 24);
+    const int bob2 = 60 - ((phase + 16) % 24);
+
+    auto draw_z = [spr](int x, int y, int w, int h, uint16_t color) {
+        spr->drawLine(x, y, x + w, y, color);
+        spr->drawLine(x + w, y, x, y + h, color);
+        spr->drawLine(x, y + h, x + w, y + h, color);
+    };
+
+    if (phase < 18) {
+        draw_z(238, bob0, 22, 12, SLEEP_COLOR);
+    }
+    if (phase >= 5 && phase < 22) {
+        draw_z(258, bob1, 16, 9, SLEEP_COLOR);
+    }
+    if (phase >= 11) {
+        draw_z(274, bob2, 10, 6, SLEEP_COLOR);
+    }
+}
+
+
 /* ── FaceEngine::interpParams ────────────────────────────────────────────── */
 face_params_t FaceEngine::interpParams(const face_params_t &a,
                                         const face_params_t &b,
@@ -103,7 +167,7 @@ void FaceEngine::init(void)
     _frameCount   = 0;
     _fpsTimestamp = (uint32_t)(esp_timer_get_time() / 1000ULL);
 
-    ESP_LOGI(TAG, "init OK  drawBuf=%p  frontBuf=%p",
+    ESP_LOGD(TAG, "init OK  drawBuf=%p  frontBuf=%p",
              (void *)_drawBuf, (void *)_frontBuf);
 }
 
@@ -134,12 +198,34 @@ void FaceEngine::setGaze(float x, float y)
     taskEXIT_CRITICAL(&_gazeMux);
 }
 
+void FaceEngine::setAlertOverlay(int enabled)
+{
+    taskENTER_CRITICAL(&_overlayMux);
+    _alertOverlay = (enabled != 0);
+    taskEXIT_CRITICAL(&_overlayMux);
+}
+
+void FaceEngine::setSleepOverlay(int enabled)
+{
+    taskENTER_CRITICAL(&_overlayMux);
+    _sleepOverlay = (enabled != 0);
+    taskEXIT_CRITICAL(&_overlayMux);
+}
+
 /* ── getTarget ───────────────────────────────────────────────────────────── */
 void FaceEngine::getTarget(face_params_t *out)
 {
     if (!out) return;
     taskENTER_CRITICAL(&_paramMux);
     *out = _dst;
+    taskEXIT_CRITICAL(&_paramMux);
+}
+
+void FaceEngine::getCurrent(face_params_t *out)
+{
+    if (!out) return;
+    taskENTER_CRITICAL(&_paramMux);
+    *out = _params;
     taskEXIT_CRITICAL(&_paramMux);
 }
 
@@ -187,6 +273,10 @@ void FaceEngine::renderLoop(void)
             /* Cubic ease-in-out: smoothstep 3t² − 2t³ */
             t = t * t * (3.0f - 2.0f * t);
             cur = interpParams(src, dst, t);
+
+            if ((t_dur >= 120u) && params_need_runtime_floor(dst)) {
+                cur = apply_runtime_floor(cur);
+            }
         }
 
         /* 3. Publica estado interpolado (spinlock) para applyParams() */
@@ -200,17 +290,30 @@ void FaceEngine::renderLoop(void)
         const int   micro_x = (int)roundf(sinf(6.28318f * 0.3f * t_sec) * 1.5f);
         const int   micro_y = (int)roundf(sinf(6.28318f * 0.2f * t_sec + 1.2f) * 1.0f);
 
-        /* 4b. Gaze — offset de olhar do GazeService (escala: ±0.8 → ±20 px / ±12 px) */
+        /* 4b. Gaze — offset de olhar do GazeService (escala: ±0.92 → ~±30 px / ±16 px) */
         float gx, gy;
         taskENTER_CRITICAL(&_gazeMux);
         gx = _gaze_x;
         gy = _gaze_y;
         taskEXIT_CRITICAL(&_gazeMux);
-        const int gaze_px_x = (int)roundf(gx * 25.0f);
-        const int gaze_px_y = (int)roundf(gy * 15.0f);
+        const int gaze_px_x = (int)roundf(gx * 32.0f);
+        const int gaze_px_y = (int)roundf(gy * 17.0f);
+
+        bool alert_overlay = false;
+        bool sleep_overlay = false;
+        taskENTER_CRITICAL(&_overlayMux);
+        alert_overlay = _alertOverlay;
+        sleep_overlay = _sleepOverlay;
+        taskEXIT_CRITICAL(&_overlayMux);
 
         /* 5. Renderiza na drawBuf com micro-offset + gaze */
         drawFrame(cur, micro_x + gaze_px_x, micro_y + gaze_px_y);
+        if (alert_overlay) {
+            draw_alert_overlay(_drawBuf, now_ms);
+        }
+        if (sleep_overlay) {
+            draw_sleep_overlay(_drawBuf, now_ms);
+        }
 
         /* 5. Empurra para o display físico */
         display_push_sprite(_drawBuf, 0, 0);
@@ -226,7 +329,7 @@ void FaceEngine::renderLoop(void)
         if (now_ms - _fpsTimestamp >= 5000u) {
             const float fps = (float)_frameCount * 1000.f /
                               (float)(now_ms - _fpsTimestamp);
-            ESP_LOGI(TAG, "fps=%.1f", fps);
+            ESP_LOGD(TAG, "fps=%.1f", fps);
             _frameCount   = 0;
             _fpsTimestamp = now_ms;
         }
@@ -253,7 +356,7 @@ void FaceEngine::startTask(void)
         nullptr,
         1   /* Core 1 */
     );
-    ESP_LOGI(TAG, "FaceRenderTask criada no Core 1");
+    ESP_LOGD(TAG, "FaceRenderTask criada no Core 1");
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -280,7 +383,25 @@ extern "C" void face_engine_get_target(face_params_t *out)
     FaceEngine::instance().getTarget(out);
 }
 
+extern "C" void face_engine_get_current(face_params_t *out)
+{
+    FaceEngine::instance().getCurrent(out);
+}
+
 extern "C" void face_engine_set_gaze(float x, float y)
 {
     FaceEngine::instance().setGaze(x, y);
 }
+
+extern "C" void face_engine_set_alert_overlay(int enabled)
+{
+    FaceEngine::instance().setAlertOverlay(enabled);
+}
+
+extern "C" void face_engine_set_sleep_overlay(int enabled)
+{
+    FaceEngine::instance().setSleepOverlay(enabled);
+}
+
+
+

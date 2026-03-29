@@ -43,8 +43,17 @@ public:
     /* Retorna a expressão-alvo atual (_dst). Thread-safe. */
     void getTarget(face_params_t *out);
 
+    /* Retorna a expressão renderizada atual (_params). Thread-safe. */
+    void getCurrent(face_params_t *out);
+
     /* Atualiza posição de olhar (x, y em [-0.8, 0.8]). Thread-safe. */
     void setGaze(float x, float y);
+
+    /* Ativa/desativa overlay visual de alerta. Thread-safe. */
+    void setAlertOverlay(int enabled);
+
+    /* Ativa/desativa overlay visual de sono. Thread-safe. */
+    void setSleepOverlay(int enabled);
 
 private:
     lgfx::LGFX_Sprite *_drawBuf  = nullptr;
@@ -67,6 +76,10 @@ private:
     volatile float _gaze_x = 0.0f;
     volatile float _gaze_y = 0.0f;
     portMUX_TYPE   _gazeMux = portMUX_INITIALIZER_UNLOCKED;
+
+    bool         _alertOverlay = false;
+    bool         _sleepOverlay = false;
+    portMUX_TYPE _overlayMux = portMUX_INITIALIZER_UNLOCKED;
 
     uint32_t _frameCount   = 0;
     uint32_t _fpsTimestamp = 0;

@@ -31,11 +31,29 @@ void face_engine_apply_params(const face_params_t *p);
 void face_engine_get_target(face_params_t *out);
 
 /*
+ * Copia a expressão renderizada atual (_params) para *out. Thread-safe.
+ * Usado quando precisamos de uma base estável do frame atual.
+ */
+void face_engine_get_current(face_params_t *out);
+
+/*
  * Atualiza a posição de olhar do GazeService.
  * x, y em [-0.8, 0.8]; positivo = direita / baixo.
  * Thread-safe (spinlock). Aplicado como offset no próximo frame.
  */
 void face_engine_set_gaze(float x, float y);
+
+/*
+ * Ativa/desativa overlay visual de alerta.
+ * Usado para sinais temporários acima da expressão base.
+ */
+void face_engine_set_alert_overlay(int enabled);
+
+/*
+ * Ativa/desativa overlay visual de sono.
+ * Usado para animacao leve acima da expressao base.
+ */
+void face_engine_set_sleep_overlay(int enabled);
 
 #ifdef __cplusplus
 }
