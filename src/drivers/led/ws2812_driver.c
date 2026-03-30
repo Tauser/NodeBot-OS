@@ -2,12 +2,10 @@
 
 #include <string.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
 #include "driver/rmt_tx.h"
 #include "driver/rmt_encoder.h"
 #include "esp_log.h"
 #include "esp_err.h"
-#include "esp_timer.h"
 
 /* ─── timing WS2812B (ns) ────────────────────────────────────────── */
 #define T0H_NS   400
@@ -29,14 +27,6 @@ static rmt_channel_handle_t  s_chan;
 static rmt_encoder_handle_t  s_encoder;
 static uint32_t              s_num_leds;
 static uint8_t               s_buf[MAX_LEDS][3]; /* GRB */
-
-/* estado de LED de alto nível */
-static SemaphoreHandle_t      s_led_mutex;
-static esp_timer_handle_t     s_blink_timer;
-static bool                   s_blink_on;
-static uint8_t                s_blink_r, s_blink_g, s_blink_b;
-static uint32_t               s_status_idx = 0;   /* LED de status (onboard) */
-static uint8_t                s_brightness  = 255; /* escala global 0-255     */
 
 /* ─── encoder de bytes para símbolos RMT ─────────────────────────── */
 
@@ -134,23 +124,10 @@ static esp_err_t new_ws2812_encoder(rmt_encoder_handle_t *out)
 
 /* ─────────────────────────────────────────────────────────────────── */
 
-static void blink_timer_cb(void *arg)
-{
-    s_blink_on = !s_blink_on;
-    uint8_t r = s_blink_on ? s_blink_r : 0;
-    uint8_t g = s_blink_on ? s_blink_g : 0;
-    uint8_t b = s_blink_on ? s_blink_b : 0;
-    ws2812_set_pixel(s_status_idx, r, g, b);
-    ws2812_show();
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-
 void ws2812_init(gpio_num_t gpio, uint32_t num_leds)
 {
     s_num_leds = (num_leds > MAX_LEDS) ? MAX_LEDS : num_leds;
     memset(s_buf, 0, sizeof(s_buf));
-    s_led_mutex = xSemaphoreCreateMutex();
 
     rmt_tx_channel_config_t chan_cfg = {
         .gpio_num          = gpio,
@@ -162,9 +139,6 @@ void ws2812_init(gpio_num_t gpio, uint32_t num_leds)
     ESP_ERROR_CHECK(rmt_new_tx_channel(&chan_cfg, &s_chan));
     ESP_ERROR_CHECK(new_ws2812_encoder(&s_encoder));
     ESP_ERROR_CHECK(rmt_enable(s_chan));
-
-    /* Garante que os LEDs físicos iniciam apagados */
-    ws2812_show();
 
     ESP_LOGI(TAG, "WS2812 OK — GPIO%d  %"PRIu32" LEDs", gpio, s_num_leds);
 }
@@ -179,75 +153,8 @@ void ws2812_set_pixel(uint32_t idx, uint8_t r, uint8_t g, uint8_t b)
 
 void ws2812_show(void)
 {
-    /* Aplica brilho global sem modificar o buffer original */
-    uint8_t scaled[MAX_LEDS][3];
-    for (uint32_t i = 0; i < s_num_leds; i++) {
-        scaled[i][0] = (uint8_t)((s_buf[i][0] * s_brightness) / 255u);
-        scaled[i][1] = (uint8_t)((s_buf[i][1] * s_brightness) / 255u);
-        scaled[i][2] = (uint8_t)((s_buf[i][2] * s_brightness) / 255u);
-    }
     rmt_transmit_config_t tx = { .loop_count = 0 };
     ESP_ERROR_CHECK(rmt_transmit(s_chan, s_encoder,
-                                 scaled, s_num_leds * 3, &tx));
+                                 s_buf, s_num_leds * 3, &tx));
     rmt_tx_wait_all_done(s_chan, pdMS_TO_TICKS(100));
-}
-
-void ws2812_set_brightness(uint8_t brightness)
-{
-    s_brightness = brightness;
-}
-
-void ws2812_set_status_led(uint32_t idx)
-{
-    if (idx < s_num_leds) {
-        s_status_idx = idx;
-    }
-}
-
-void ws2812_set_state(led_state_t state)
-{
-    if (!s_led_mutex) return; /* não inicializado */
-
-    xSemaphoreTake(s_led_mutex, portMAX_DELAY);
-
-    /* Para o timer de piscar, se estiver ativo */
-    if (s_blink_timer) {
-        esp_timer_stop(s_blink_timer);
-    }
-
-    uint8_t r = 0, g = 0, b = 0;
-    bool    blink = false;
-
-    switch (state) {
-        case LED_STATE_NORMAL:    g = 200;                      break;
-        case LED_STATE_DEGRADED:  r = 200; g = 80;              break;
-        case LED_STATE_LISTENING: r = 200;                      break;
-        case LED_STATE_PRIVACY:   r = 160; g = 160; b = 160;    break;
-        case LED_STATE_CAMERA:    r = 200; blink = true;        break;
-        default:                                                 break;
-    }
-
-    ws2812_set_pixel(s_status_idx, r, g, b);
-    ws2812_show();
-
-    if (blink) {
-        s_blink_r  = r;
-        s_blink_g  = g;
-        s_blink_b  = b;
-        s_blink_on = true;
-
-        if (!s_blink_timer) {
-            esp_timer_create_args_t args = {
-                .callback        = blink_timer_cb,
-                .arg             = NULL,
-                .dispatch_method = ESP_TIMER_TASK,
-                .name            = "led_blink",
-            };
-            ESP_ERROR_CHECK(esp_timer_create(&args, &s_blink_timer));
-        }
-        ESP_ERROR_CHECK(esp_timer_start_periodic(s_blink_timer,
-                                                 500ULL * 1000ULL)); /* 500 ms */
-    }
-
-    xSemaphoreGive(s_led_mutex);
 }

@@ -12,18 +12,12 @@ static const char *TAG = "BLINK";
 /* ── Estado interno ─────────────────────────────────────────────────────── */
 static volatile float s_energy   = 0.5f;
 static volatile bool  s_suppress = false;
-static portMUX_TYPE    s_blink_lock = portMUX_INITIALIZER_UNLOCKED;
-static volatile bool   s_blink_in_progress = false;
 
 /* ── Duração dos keyframes ───────────────────────────────────────────────── */
 static constexpr uint32_t KF1_MS    =  70u;
 static constexpr uint32_t KF2_MS    =  30u;
 static constexpr uint32_t KF3_MS    = 110u;
 static constexpr uint32_t MARGIN_MS =  10u;
-static constexpr float    KF1_OPEN_SCALE = 0.24f;
-static constexpr float    KF2_OPEN_SCALE = 0.14f;
-static constexpr float    BLINK_OPEN_FLOOR = 0.14f;
-static face_params_t       s_last_open_base = FACE_NEUTRAL;
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -41,75 +35,12 @@ static inline int8_t clamp_y(int v)
     return (int8_t)v;
 }
 
-static inline bool eyes_already_small(const face_params_t &p)
-{
-    return (p.open_l <= 0.50f) || (p.open_r <= 0.50f);
-}
-
-static inline float blink_open_value(float base_open, float scale)
-{
-    float v = base_open * scale;
-    return (v < BLINK_OPEN_FLOOR) ? BLINK_OPEN_FLOOR : v;
-}
-
-static void remember_open_base(const face_params_t &p)
-{
-    if (!eyes_already_small(p)) {
-        s_last_open_base = p;
-    }
-}
-
-static bool blink_try_begin(void)
-{
-    bool acquired = false;
-
-    taskENTER_CRITICAL(&s_blink_lock);
-    if (!s_blink_in_progress) {
-        s_blink_in_progress = true;
-        acquired = true;
-    }
-    taskEXIT_CRITICAL(&s_blink_lock);
-
-    return acquired;
-}
-
-static void blink_end(void)
-{
-    taskENTER_CRITICAL(&s_blink_lock);
-    s_blink_in_progress = false;
-    taskEXIT_CRITICAL(&s_blink_lock);
-}
-
 /* ── do_blink ────────────────────────────────────────────────────────────── */
 static void do_blink(void)
 {
-    if (!blink_try_begin()) {
-        ESP_LOGD(TAG, "blink skip: already in progress");
-        return;
-    }
-
-    /* Salva expressão renderizada atual como base visual e o target lógico atual
-     * para restaurá-lo ao final do blink. Sem isso, o blink passa a virar o
-     * `_dst` do FaceEngine e o recovery pode perseguir um target semi-fechado. */
+    /* Salva expressão-alvo atual como base para os deltas */
     face_params_t base;
-    face_params_t steady_target;
-    face_engine_get_current(&base);
-    face_engine_get_target(&steady_target);
-
-    if (eyes_already_small(base)) {
-        ESP_LOGD(TAG, "blink skip: eyes already small");
-        face_engine_get_target(&base);
-        if (eyes_already_small(base)) {
-            base = s_last_open_base;
-        }
-    } else {
-        remember_open_base(base);
-    }
-
-    if (eyes_already_small(base)) {
-        blink_end();
-        return;
-    }
+    face_engine_get_target(&base);
 
     /* ── KF1: ESPREMENDO — deltas sobre base, ease-in 70 ms ─────────────── */
     face_params_t kf1 = base;
@@ -126,11 +57,9 @@ static void do_blink(void)
     kf1.tl_r = clamp_corner((int)base.tl_r + 6);
     kf1.tr_r = clamp_corner((int)base.tr_r + 6);
 
-    /* Evita que o blink passe a perseguir um alvo "quase zero" por muitos
-     * frames em runtime. No painel a leitura continua de piscada, mas sem
-     * empurrar o target para 0.08/0.02 como antes. */
-    kf1.open_l = blink_open_value(base.open_l, KF1_OPEN_SCALE);
-    kf1.open_r = blink_open_value(base.open_r, KF1_OPEN_SCALE);
+    /* Abertura: 8% da abertura atual */
+    kf1.open_l = base.open_l * 0.08f;
+    kf1.open_r = base.open_r * 0.08f;
 
     /* Y: sobe levemente (+delta negativo) */
     kf1.y_l = clamp_y((int)base.y_l - 4);
@@ -144,38 +73,30 @@ static void do_blink(void)
     /* Verifica supressão durante KF1 — reabre com expressão original */
     if (s_suppress) {
         ESP_LOGD(TAG, "blink cancelado no KF1 — reabrindo");
-        face_params_t abort = steady_target;
-        if (eyes_already_small(abort)) {
-            abort = base;
-        }
+        face_params_t abort = base;
         abort.transition_ms = (uint16_t)KF3_MS;
         face_engine_apply_params(&abort);
         vTaskDelay(pdMS_TO_TICKS(KF3_MS + MARGIN_MS));
-        blink_end();
         return;
     }
 
-    /* ── KF2: FECHADO — menos agressivo para não "colar" small-eyes ─────── */
+    /* ── KF2: FECHADO — 2% da abertura, cantos e y de KF1, hold 30 ms ───── */
     face_params_t kf2 = kf1;
-    kf2.open_l        = blink_open_value(base.open_l, KF2_OPEN_SCALE);
-    kf2.open_r        = blink_open_value(base.open_r, KF2_OPEN_SCALE);
+    kf2.open_l        = base.open_l * 0.02f;
+    kf2.open_r        = base.open_r * 0.02f;
     kf2.transition_ms = 0;   /* instantâneo */
     face_engine_apply_params(&kf2);
 
     vTaskDelay(pdMS_TO_TICKS(KF2_MS));
 
     /* ── KF3: ABRINDO — restaura base, ease-out 110 ms ──────────────────── */
-    face_params_t kf3 = steady_target;
-    if (eyes_already_small(kf3)) {
-        kf3 = base;
-    }
+    face_params_t kf3 = base;
     kf3.transition_ms = (uint16_t)KF3_MS;
     face_engine_apply_params(&kf3);
 
     vTaskDelay(pdMS_TO_TICKS(KF3_MS + MARGIN_MS));
 
     ESP_LOGD(TAG, "blink completo");
-    blink_end();
 }
 
 /* ── BlinkTask automática ───────────────────────────────────────────────── */
@@ -228,14 +149,6 @@ void blink_controller_init(void)
 
 void blink_controller_trigger(void)
 {
-    face_params_t base;
-    face_engine_get_current(&base);
-    remember_open_base(base);
-    if (eyes_already_small(base)) {
-        ESP_LOGD(TAG, "blink trigger skip: eyes already small");
-        return;
-    }
-
     xTaskCreatePinnedToCore(
         blink_once_task,
         "BlinkOnce",

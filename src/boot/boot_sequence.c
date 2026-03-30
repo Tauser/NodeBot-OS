@@ -21,16 +21,6 @@
 #include "gaze_service.h"
 #include "state_vector.h"
 #include "idle_behavior.h"
-#include "brownout_handler.h"
-#include "safe_mode_service.h"
-#include "motion_safety_service.h"
-#include "imu_service.h"
-#include "touch_service.h"
-#include "audio_capture.h"
-#include "vad.h"
-#include "audio_feedback.h"
-#include "wake_word.h"
-#include "behavior_engine.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -118,9 +108,6 @@ esp_err_t app_boot(void)
     /* ── STEP 2: ConfigManager ───────────────────────────────────────── */
     BOOT_STEP(2, "config_manager", config_manager_init());
 
-    /* Registra shutdown handler logo após NVS estar disponível */
-    BOOT_STEP_V(2, "brownout_handler", brownout_handler_init());
-
     /* ── STEP 3: StorageManager (sd_init via weak stub) ─────────────── */
     BOOT_STEP(3, "storage_manager", storage_manager_init());
 
@@ -152,36 +139,17 @@ esp_err_t app_boot(void)
     BOOT_STEP  (5, "imu",        imu_init());
     BOOT_STEP_V(5, "touch",      touch_driver_init());
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
-    ws2812_set_status_led(HAL_RMT_LED_STATUS_IDX);
-    ws2812_set_brightness((uint8_t)config_get_int("led_bright", 128));
     BOOT_STEP_V(5, "audio",      audio_init());
-    /* Safe mode depende de ws2812 e face_engine — verificar após ambos */
-    BOOT_STEP_V(5, "safe_mode",  safe_mode_check());
 
     /* ── STEP 6: EventBus ────────────────────────────────────────────── */
     BOOT_STEP(6, "event_bus", event_bus_init());
 
-    BOOT_STEP_V(6, "gaze_service",    gaze_service_init());
-    BOOT_STEP_V(6, "state_vector",    state_vector_init());
-    BOOT_STEP_V(6, "idle_behavior",   idle_behavior_init());
-    BOOT_STEP_V(6, "motion_safety",   motion_safety_init());
-    BOOT_STEP_V(6, "imu_service",     imu_service_init());
-    BOOT_STEP_V(6, "touch_service",   touch_service_init());
-    BOOT_STEP_V(6, "vad",             vad_init());
-    BOOT_STEP_V(6, "audio_capture",   audio_capture_init());
-    BOOT_STEP  (6, "audio_feedback",  audio_feedback_init());
-    /* wake_word_init: passa NULL/0 — modelo linkado via menuconfig esp-sr */
-    if (!wake_word_init(NULL, 0)) {
-        ESP_LOGW(TAG, "[STEP 6] wake_word: esp-sr indisponível — wake word desativado");
-    } else {
-        ESP_LOGI(TAG, "[STEP 6] wake_word init_ok");
-    }
+    BOOT_STEP_V(6, "gaze_service",  gaze_service_init());
+    BOOT_STEP_V(6, "state_vector",  state_vector_init());
+    BOOT_STEP_V(6, "idle_behavior", idle_behavior_init());
 
-    /* ── STEP 7: BehaviorEngine ─────────────────────────────────────── */
-    BOOT_STEP_V(7, "behavior_engine", behavior_engine_init());
-
-    /* ── STEP 8: PowerManager ────────────────────────────────────────── */
-    BOOT_STEP(8, "power_manager", power_manager_init());
+    /* ── STEP 7: PowerManager ────────────────────────────────────────── */
+    BOOT_STEP(7, "power_manager", power_manager_init());
 
     /* ── Resultado ───────────────────────────────────────────────────── */
     if (s_first_err == ESP_OK) {

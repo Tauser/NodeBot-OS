@@ -64,70 +64,67 @@ typedef struct {
 /* Ordem: tl_l,tr_l,bl_l,br_l | tl_r,tr_r,bl_r,br_r | op_l,op_r | y_l,y_r | DIST | rt,rb | ct,cb | color | ms | pri */
 
 #define FACE_NEUTRAL \
-    ((face_params_t){ 0,0,0,0,  0,0,0,0,  1.00f,1.00f,  0,0,  108,  20,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
+    ((face_params_t){ 0,0,0,0,  0,0,0,0,  1.00f,1.00f,  0,0,  93,  20,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
 
 #define FACE_BLINK_HI \
     ((face_params_t){ 0,0,28,28,  0,0,28,28,  0.09f,0.09f,  -18,-18,  128,  20,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 100, 1 })
 
 #define FACE_HAPPY \
-    ((face_params_t){ 12,12,-6,-6,  12,12,-6,-6,  0.38f,0.38f,  -8,-8,  116,  5,5,  12,-12,  (uint16_t)FACE_EYE_COLOR, 420, 0 })
+    ((face_params_t){ 14,14,-8,-8,  14,14,-8,-8,  0.32f,0.32f,  -10,-10,  128,  4,4,  15,-15,  (uint16_t)FACE_EYE_COLOR, 400, 0 })
 
 #define FACE_GLEE \
-    ((face_params_t){ 20,20,-4,-22,  20,20,-22,-4,  0.34f,0.34f,  -14,-14,  118,  4,4,  20,-18,  (uint16_t)FACE_EYE_COLOR, 420, 0 })
+    ((face_params_t){ 22,22,-6,-30,  22,22,-30,-6,  0.28f,0.28f,  -18,-18,  128,  4,4,  24,-24,  (uint16_t)FACE_EYE_COLOR, 400, 0 })
 
 #define FACE_BLINK_LO \
     ((face_params_t){ 28,28,0,0,  28,28,0,0,  0.10f,0.10f,  18,18,  128,  20,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 100, 1 })
 
 #define FACE_SAD_DOWN \
-    ((face_params_t){ 15,-18,-6,-4,  -18,15,-4,-6,  0.68f,0.68f,  34,34,  112,  10,10,  -7,-6,  (uint16_t)FACE_EYE_COLOR, 620, 0 })
+    ((face_params_t){ 18,-22,-8,-5,  -22,18,-5,-8,  0.62f,0.62f,  40,40,  128,  10,10,  -8,-7,  (uint16_t)FACE_EYE_COLOR, 600, 0 })
 
 #define FACE_SAD_UP \
-    ((face_params_t){ 24,-8,0,-7,  -8,24,-7,0,  0.76f,0.76f,  -6,-6,  112,  5,5,  3,-9,  (uint16_t)FACE_EYE_COLOR, 620, 0 })
+    ((face_params_t){ 30,-10,0,-9,  -10,30,-9,0,  0.72f,0.72f,  -8,-8,  128,  4,4,  4,-11,  (uint16_t)FACE_EYE_COLOR, 600, 0 })
 
 #define FACE_WORRIED \
-    ((face_params_t){ -10,-24,2,0,  -24,-10,0,2,  0.88f,0.88f,  0,0,  108,  13,18,  0,0,  (uint16_t)FACE_EYE_COLOR, 520, 0 })
+    ((face_params_t){ -12,-30,2,0,  -30,-12,0,2,  0.84f,0.84f,  0,0,  94,  13,19,  0,0,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
 
 #define FACE_FOCUSED \
-    ((face_params_t){ 8,8,5,5,  8,8,5,5,  0.58f,0.58f,  0,0,  114,  14,6,  0,-9,  (uint16_t)FACE_EYE_COLOR, 380, 0 })
+    ((face_params_t){ 10,10,6,6,  10,10,6,6,  0.44f,0.44f,  0,0,  128,  14,4,  0,-11,  (uint16_t)FACE_EYE_COLOR, 350, 0 })
 
 #define FACE_ANNOYED \
-    ((face_params_t){ 9,18,7,7,  18,9,7,7,  0.56f,0.64f,  4,0,  116,  5,13,  11,-3,  (uint16_t)FACE_EYE_COLOR, 430, 0 })
+    ((face_params_t){ 10,22,8,8,  22,10,8,8,  0.50f,0.60f,  6,0,  128,  4,14,  13,-4,  (uint16_t)FACE_EYE_COLOR, 400, 0 })
 
 #define FACE_SURPRISED \
-    ((face_params_t){ -20,-20,-9,-9,  -20,-20,-9,-9,  1.00f,1.00f,  0,0,  112,  24,24,  0,0,  (uint16_t)FACE_EYE_COLOR, 280, 0 })
+    ((face_params_t){ -22,-22,-10,-10,  -22,-22,-10,-10,  1.00f,1.00f,  0,0,  128,  25,25,  0,0,  (uint16_t)FACE_EYE_COLOR, 250, 0 })
 
 #define FACE_SKEPTIC \
-    ((face_params_t){ 0,0,3,3,  15,0,8,8,  0.96f,0.76f,  0,6,  116,  5,18,  0,0,  (uint16_t)FACE_EYE_COLOR, 520, 0 })
+    ((face_params_t){ 0,0,4,4,  19,0,10,10,  1.00f,0.69f,  0,8,  128,  4,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
 
 #define FACE_FRUS_BORED \
-    ((face_params_t){ 18,10,8,8,  10,18,8,8,  0.60f,0.60f,  30,30,  114,  5,16,  0,0,  (uint16_t)FACE_EYE_COLOR, 620, 0 })
+    ((face_params_t){ 24,13,12,12,  13,24,12,12,  0.46f,0.46f,  40,40,  128,  4,17,  0,0,  (uint16_t)FACE_EYE_COLOR, 600, 0 })
 
 #define FACE_UNIMP \
-    ((face_params_t){ 16,16,10,10,  16,16,10,10,  0.50f,0.54f,  0,-4,  114,  6,18,  0,0,  (uint16_t)FACE_EYE_COLOR, 540, 0 })
+    ((face_params_t){ 22,22,16,16,  22,22,16,16,  0.34f,0.43f,  0,-6,  128,  4,20,  0,0,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
 
 #define FACE_SLEEPY \
-    ((face_params_t){ 22,14,10,4,  10,22,4,10,  0.48f,0.68f,  0,-8,  108,  14,14,  0,0,  (uint16_t)FACE_EYE_COLOR, 860, 0 })
-
-#define FACE_SLEEP \
-    ((face_params_t){ 8,0,0,3,  0,8,3,0,  0.15f,0.15f,  0,0,  108,  6,6,  -3,3,  (uint16_t)FACE_EYE_COLOR, 900, 0 })
+    ((face_params_t){ 30,19,15,5,  13,30,5,15,  0.30f,0.59f,  0,-13,  93,  14,14,  0,0,  (uint16_t)FACE_EYE_COLOR, 800, 0 })
 
 #define FACE_SUSPICIOUS \
-    ((face_params_t){ 10,10,6,6,  22,10,6,6,  0.60f,0.47f,  0,6,  100,  14,4,  0,0,  (uint16_t)FACE_EYE_COLOR, 450, 0 })
+    ((face_params_t){ 10,10,6,6,  24,10,6,6,  0.56f,0.41f,  0,7,  92,  14,4,  0,0,  (uint16_t)FACE_EYE_COLOR, 450, 0 })
 
 #define FACE_SQUINT \
-    ((face_params_t){ 12,12,7,12,  12,12,12,7,  0.54f,0.54f,  0,0,  110,  14,6,  0,0,  (uint16_t)FACE_EYE_COLOR, 420, 0 })
+    ((face_params_t){ 20,20,10,20,  20,20,20,10,  0.40f,0.40f,  0,0,  92,  14,4,  0,0,  (uint16_t)FACE_EYE_COLOR, 400, 0 })
 
 #define FACE_ANGRY \
-    ((face_params_t){ 10,24,0,0,  24,10,0,0,  0.90f,0.90f,  0,0,  106,  8,12,  0,0,  (uint16_t)FACE_EYE_COLOR, 430, 0 })
+    ((face_params_t){ 12,30,0,0,  30,12,0,0,  0.86f,0.86f,  0,0,  92,  8,11,  0,0,  (uint16_t)FACE_EYE_COLOR, 400, 0 })
 
 #define FACE_FURIOUS \
-    ((face_params_t){ -8,26,-24,-22,  26,-1,-22,-24,  0.94f,0.94f,  0,0,  104,  8,6,  8,-12,  (uint16_t)FACE_EYE_COLOR, 320, 0 })
+    ((face_params_t){ -10,30,-29,-27,  30,-1,-27,-29,  0.92f,0.92f,  0,0,  92,  8,5,  10,-14,  (uint16_t)FACE_EYE_COLOR, 300, 0 })
 
 #define FACE_SCARED \
-    ((face_params_t){ -2,-8,-5,-8,  -8,-2,-8,-5,  0.98f,0.98f,  0,0,  104,  18,5,  0,-10,  (uint16_t)FACE_EYE_COLOR, 230, 0 })
+    ((face_params_t){ -2,-8,-6,-10,  -8,-2,-10,-6,  0.94f,0.94f,  0,0,  91,  16,4,  0,-12,  (uint16_t)FACE_EYE_COLOR, 200, 0 })
 
 #define FACE_AWE \
-    ((face_params_t){ -22,-22,-14,-10,  -22,-22,-10,-14,  1.00f,1.00f,  0,0,  102,  30,14,  0,-3,  (uint16_t)FACE_EYE_COLOR, 520, 0 })
+    ((face_params_t){ -27,-27,-18,-13,  -27,-27,-13,-18,  1.00f,1.00f,  0,0,  89,  36,14,  0,-4,  (uint16_t)FACE_EYE_COLOR, 500, 0 })
 
 /* ── Aliases de compatibilidade ─────────────────────────────────────────── */
 #define FACE_SAD    FACE_SAD_DOWN

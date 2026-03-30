@@ -24,29 +24,21 @@ extern "C" {
 /* Touch */
 #define EVT_TOUCH_PRESS      0x0101
 #define EVT_TOUCH_RELEASE    0x0102
-#define EVT_TOUCH_DETECTED   0x0103  /* payload: touch_event_t (touch_service.h) */
-/* IMU / Motion */
+/* IMU */
 #define EVT_IMU_DATA         0x0201   /* payload: { int16_t ax,ay,az,gx,gy,gz } */
-#define EVT_IMU_FALL         0x0202   /* legado — usar EVT_MOTION_DETECTED        */
-#define EVT_MOTION_DETECTED  0x0203   /* payload: motion_event_t (imu_service.h) */
+#define EVT_IMU_FALL         0x0202
 /* Áudio */
-#define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg                    */
+#define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg            */
 #define EVT_AUDIO_KEYWORD    0x0302
-#define EVT_VOICE_ACTIVITY   0x0303   /* payload: voice_activity_event_t (vad.h)     */
 /* LED */
 #define EVT_LED_CMD          0x0401   /* payload: { uint8_t r,g,b,idx }      */
 /* Display */
 #define EVT_DISPLAY_CMD      0x0501
 /* Gaze */
 #define EVT_GAZE_UPDATE      0x0601   /* payload: gaze_event_t { float x, y } */
-/* Wake word */
-#define EVT_WAKE_WORD         0x0701  /* payload: wake_word_event_t (wake_word.h) */
-/* Servo / Motion Safety */
-#define EVT_SERVO_BLOCKED     0x0801  /* payload: servo_blocked_event_t      */
 /* Sistema */
-#define EVT_SYS_LOWBAT        0x0F01
-#define EVT_SYS_ERROR         0x0F02  /* payload: uint32_t error_code        */
-#define EVT_SERVICE_HEARTBEAT 0x0F10  /* payload: nenhum — keepalive         */
+#define EVT_SYS_LOWBAT       0x0F01
+#define EVT_SYS_ERROR        0x0F02   /* payload: uint32_t error_code        */
 
 /* ── API ─────────────────────────────────────────────────────────────── */
 

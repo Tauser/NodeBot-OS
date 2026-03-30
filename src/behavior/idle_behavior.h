@@ -5,29 +5,22 @@ extern "C" {
 #endif
 
 /*
- * idle_behavior — Idle Behavior Engine (E22 rev2).
+ * idle_behavior — variações de vida ociosa do robô (E22).
  *
- * Tier 2 — behaviors ocasionais com timer independente:
- *   look_side     (8–20 s)    gaze lateral
- *   look_up       (15–35 s)   gaze para cima
- *   squint_think  (12–25 s)   olhos semicerram
- *   slow_blink    (10–20 s)   energy < 0.5
- *   double_blink  (20–40 s)   energy >= 0.5
- *   slight_smile  (20–40 s)   valence > 0
+ * Cria IdleTask (Core 0, pri 3) que, a cada rand(20–40 s):
+ *   (a) slight_smile   — sorriso sutil por 3 s
+ *   (b) pensive        — olhar levemente para cima (gaze_y=-0.2) por 3 s
+ *   (c) double_blink   — piscar duplo rápido
  *
- * Tier 3 — animações raras com cooldown independente:
- *   yawn    (5–15 min)  energy < 0.5
- *   sneeze  (10–30 min)
- *   hiccup  (8–20 min)
- *
- * Cria IdleTask (Core 1, pri 3, 10 Hz).
+ * Bocejo automático verificado a cada 60 s:
+ *   energy < 0.4 AND last_interaction > 5 min → 40% chance de bocejo.
+ *   Cooldown: 8 minutos entre bocejos.
  */
-
 void idle_behavior_init(void);
 
 /*
- * Dispara bocejo imediatamente, respeitando cooldown de 5 min.
- * Bloqueia a task chamadora ~7 s durante a animação.
+ * Dispara bocejo imediatamente (respeitando cooldown de 8 min).
+ * Bloqueia a task chamadora por ~6 s enquanto a animação roda.
  * Suprime blinks automáticos durante a animação.
  */
 void idle_behavior_trigger_yawn(void);
