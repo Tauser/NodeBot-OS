@@ -1,6 +1,6 @@
 # E22 - Idle Life — Bocejo e Variação Orgânica
 
-- Status: 🔲 Não iniciada
+- Status: ✅ Critérios atendidos
 - Complexidade: Baixa
 - Grupo: Gaze+Idle
 - HW Real: SIM

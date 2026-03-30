@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E22 - Idle Life (bocejo e variação orgânica)
-Ultima concluida   : E21 - Vetor de Estado Interno (state_vector_t)
-Proxima            : E22 - Idle Life — Bocejo e Variação Orgânica
+Etapa em andamento : E23 - MotionSafetyService
+Ultima concluida   : E22 - Idle Life (bocejo e variação orgânica)
+Proxima            : E23 - MotionSafetyService (CRÍTICO — P22, Core 1, 5ms)
 Branch git         : main
 ```
 
