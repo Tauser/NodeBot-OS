@@ -25,6 +25,7 @@ extern "C" {
  * Uso:
  *   gaze_service_init();                   // cria GazeTask (Core 1, pri 10)
  *   gaze_service_set_target(0.5f, -0.3f, 300);  // saccade externo
+ *   gaze_service_set_target(0.5f, -0.3f, 0);    // duração automática pela distância
  *   gaze_service_get(&x, &y);             // lê posição atual (thread-safe)
  */
 
@@ -43,6 +44,8 @@ void gaze_service_init(void);
 /*
  * Dispara uma saccade para (x, y) com duração total aproximada de duration_ms.
  * x e y são clampeados para ±0.8 internamente.
+ * Se duration_ms == 0, o serviço deriva a duração pela distância.
+ * Durante a saccade, o blink automático é temporariamente suprimido.
  * Thread-safe.
  */
 void gaze_service_set_target(float x, float y, uint16_t duration_ms);

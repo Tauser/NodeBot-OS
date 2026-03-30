@@ -7,14 +7,16 @@ extern "C" {
 #include "face_params.h"   /* face_params_t — definida em src/models */
 
 /*
- * Inicializa double-buffer em PSRAM (2× sprite 240×320 RGB565 ≈ 300 KB).
+ * Inicializa double-buffer em PSRAM (2× sprite 320×240 RGB565 ≈ 300 KB).
  * Deve ser chamado APÓS display_init().
+ * Idempotente: chamadas repetidas não recriam os buffers.
  */
 void face_engine_init(void);
 
 /*
  * Cria FaceRenderTask no Core 1, prioridade 20, loop 50 ms (20 Hz alvo).
  * Deve ser chamado APÓS face_engine_init().
+ * Idempotente: ignora chamadas repetidas se a task já estiver rodando.
  */
 void face_engine_start_task(void);
 
@@ -26,7 +28,8 @@ void face_engine_apply_params(const face_params_t *p);
 
 /*
  * Copia a expressão-alvo atual (_dst) para *out. Thread-safe.
- * Usado pelo blink_controller para salvar/restaurar expressão.
+ * Útil para debug, idle variations e outros sistemas que precisem inspecionar
+ * a face base atualmente selecionada.
  */
 void face_engine_get_target(face_params_t *out);
 
@@ -36,6 +39,13 @@ void face_engine_get_target(face_params_t *out);
  * Thread-safe (spinlock). Aplicado como offset no próximo frame.
  */
 void face_engine_set_gaze(float x, float y);
+
+/*
+ * Override visual de blink em [0,1].
+ * 0 = sem blink, 1 = olho totalmente fechado.
+ * Não altera a expressão-alvo salva; atua apenas no frame renderizado.
+ */
+void face_engine_set_blink(float amount);
 
 #ifdef __cplusplus
 }

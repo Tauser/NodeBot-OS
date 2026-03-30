@@ -46,9 +46,23 @@ public:
     /* Atualiza posição de olhar (x, y em [-0.8, 0.8]). Thread-safe. */
     void setGaze(float x, float y);
 
+    /* Override visual de blink aplicado só no frame renderizado. */
+    void setBlink(float amount);
+
 private:
+    static constexpr int FB_W = 320;
+    static constexpr int FB_H = 240;
+    static constexpr float DRIFT_X_HZ = 0.28f;
+    static constexpr float DRIFT_Y_HZ = 0.22f;
+    static constexpr float DRIFT_X_PX = 1.5f;
+    static constexpr float DRIFT_Y_PX = 1.0f;
+    static constexpr float MICRO_X_PX = 0.8f;
+    static constexpr float MICRO_Y_PX = 0.6f;
+
     lgfx::LGFX_Sprite *_drawBuf  = nullptr;
     lgfx::LGFX_Sprite *_frontBuf = nullptr;
+    TaskHandle_t       _task     = nullptr;
+    bool               _initialized = false;
 
     FaceRenderer  _renderer;
 
@@ -68,10 +82,20 @@ private:
     volatile float _gaze_y = 0.0f;
     portMUX_TYPE   _gazeMux = portMUX_INITIALIZER_UNLOCKED;
 
+    volatile float _blink = 0.0f;
+    portMUX_TYPE   _blinkMux = portMUX_INITIALIZER_UNLOCKED;
+
+    /* E18: moduladores sutis de runtime por cima da face base */
+    float    _micro_x            = 0.0f;
+    float    _micro_y            = 0.0f;
+    uint32_t _nextMicroUpdateMs  = 0;
+
     uint32_t _frameCount   = 0;
     uint32_t _fpsTimestamp = 0;
 
     static void sRenderTask(void *arg);
+    bool initSprite(lgfx::LGFX_Sprite *&sprite, const char *label);
+    void resetBuffers(void);
     void renderLoop(void);
     void drawFrame(const face_params_t &p, int dx = 0, int dy = 0);
 

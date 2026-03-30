@@ -1,4 +1,5 @@
 #include "state_vector.h"
+#include "blink_controller.h"
 
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -110,6 +111,7 @@ void state_vector_init(void)
     g_state.battery_pct   = 100.0f;
 
     state_vector_load();   /* sobrescreve affinity se existir no NVS */
+    blink_set_energy(g_state.energy);
 
     xTaskCreatePinnedToCore(s_state_task, "StateTask",
                             3072, NULL, 3, NULL, 0);
@@ -134,6 +136,9 @@ void state_vector_tick(uint32_t now_ms_val)
     if (g_state.music_detected) {
         g_state.energy = clampf(g_state.energy + 0.001f, 0.0f, 1.0f);
     }
+
+    /* E18: blink automático acompanha o nível de energia percebido. */
+    blink_set_energy(g_state.energy);
 
     /* ── Mood valence: retorna a 0 com tau=6h ───────────────────────── */
     g_state.mood_valence = clampf(g_state.mood_valence * DECAY_6H, -1.0f, 1.0f);

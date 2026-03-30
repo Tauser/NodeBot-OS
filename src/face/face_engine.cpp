@@ -3,10 +3,10 @@
 
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_random.h"
 #include "watchdog_manager.h"
 
 #include <utility>   /* std::swap */
-#include <string.h>  /* memcpy   */
 #include <cmath>     /* sinf      */
 
 static const char *TAG = "FACE";
@@ -39,6 +39,18 @@ static inline uint16_t lerpRGB565(uint16_t a, uint16_t b, float t)
     return (uint16_t)((r << 11) | (g << 5) | bl);
 }
 
+static inline float randf_unit(void)
+{
+    return (float)(esp_random() & 0xFFFFu) / 65535.0f;
+}
+
+static inline int8_t clamp8(int v, int lo, int hi)
+{
+    if (v < lo) return (int8_t)lo;
+    if (v > hi) return (int8_t)hi;
+    return (int8_t)v;
+}
+
 /* ── FaceEngine::interpParams ────────────────────────────────────────────── */
 face_params_t FaceEngine::interpParams(const face_params_t &a,
                                         const face_params_t &b,
@@ -63,6 +75,10 @@ face_params_t FaceEngine::interpParams(const face_params_t &a,
     r.cv_top    = lerp8(a.cv_top, b.cv_top, t);
     r.cv_bot    = lerp8(a.cv_bot, b.cv_bot, t);
     r.color     = lerpRGB565(a.color, b.color, t);
+    r.gaze_x    = lerpF(a.gaze_x, b.gaze_x, t);
+    r.gaze_y    = lerpF(a.gaze_y, b.gaze_y, t);
+    r.squint_l  = lerpF(a.squint_l, b.squint_l, t);
+    r.squint_r  = lerpF(a.squint_r, b.squint_r, t);
     /* Campos não interpolados — usa valor do destino */
     r.transition_ms = b.transition_ms;
     r.priority      = b.priority;
@@ -76,21 +92,62 @@ FaceEngine &FaceEngine::instance()
     return s_inst;
 }
 
+bool FaceEngine::initSprite(lgfx::LGFX_Sprite *&sprite, const char *label)
+{
+    sprite = new lgfx::LGFX_Sprite();
+    if (!sprite) {
+        ESP_LOGE(TAG, "falha ao alocar sprite %s", label);
+        return false;
+    }
+
+    sprite->setPsram(true);
+    sprite->setColorDepth(lgfx::rgb565_2Byte);
+
+    void *buf = sprite->createSprite(FB_W, FB_H);
+    if (!buf) {
+        ESP_LOGE(TAG, "createSprite %s %dx%d falhou — PSRAM insuficiente?",
+                 label, FB_W, FB_H);
+        delete sprite;
+        sprite = nullptr;
+        return false;
+    }
+
+    sprite->fillScreen(TFT_BLACK);
+    return true;
+}
+
+void FaceEngine::resetBuffers(void)
+{
+    if (_drawBuf) {
+        _drawBuf->deleteSprite();
+        delete _drawBuf;
+        _drawBuf = nullptr;
+    }
+
+    if (_frontBuf) {
+        _frontBuf->deleteSprite();
+        delete _frontBuf;
+        _frontBuf = nullptr;
+    }
+
+    _initialized = false;
+}
+
 /* ── init ────────────────────────────────────────────────────────────────── */
 void FaceEngine::init(void)
 {
-    _drawBuf  = new lgfx::LGFX_Sprite();
-    _frontBuf = new lgfx::LGFX_Sprite();
-
-    for (auto *s : {_drawBuf, _frontBuf}) {
-        s->setPsram(true);
-        s->setColorDepth(lgfx::rgb565_2Byte);
-        void *buf = s->createSprite(320, 240);   /* landscape 320×240 */
-        if (!buf) {
-            ESP_LOGE(TAG, "createSprite 320x240 falhou — PSRAM insuficiente?");
-            return;
-        }
+    if (_initialized) {
+        ESP_LOGW(TAG, "init ignorado: face_engine ja inicializado");
+        return;
     }
+
+    if (!initSprite(_drawBuf, "drawBuf") ||
+        !initSprite(_frontBuf, "frontBuf")) {
+        resetBuffers();
+        return;
+    }
+
+    _frontBuf->fillScreen(TFT_BLACK);
 
     _renderer.init(_drawBuf);
 
@@ -99,9 +156,13 @@ void FaceEngine::init(void)
     _dst        = FACE_NEUTRAL;
     _transStart = 0;
     _transDur   = 0;
+    _micro_x    = 0.0f;
+    _micro_y    = 0.0f;
+    _nextMicroUpdateMs = 0;
 
     _frameCount   = 0;
     _fpsTimestamp = (uint32_t)(esp_timer_get_time() / 1000ULL);
+    _initialized  = true;
 
     ESP_LOGI(TAG, "init OK  drawBuf=%p  frontBuf=%p",
              (void *)_drawBuf, (void *)_frontBuf);
@@ -128,10 +189,25 @@ void FaceEngine::applyParams(const face_params_t *target)
 /* ── setGaze ─────────────────────────────────────────────────────────────── */
 void FaceEngine::setGaze(float x, float y)
 {
+    if (x < -1.0f) x = -1.0f;
+    if (x >  1.0f) x =  1.0f;
+    if (y < -1.0f) y = -1.0f;
+    if (y >  1.0f) y =  1.0f;
+
     taskENTER_CRITICAL(&_gazeMux);
     _gaze_x = x;
     _gaze_y = y;
     taskEXIT_CRITICAL(&_gazeMux);
+}
+
+void FaceEngine::setBlink(float amount)
+{
+    if (amount < 0.0f) amount = 0.0f;
+    if (amount > 1.0f) amount = 1.0f;
+
+    taskENTER_CRITICAL(&_blinkMux);
+    _blink = amount;
+    taskEXIT_CRITICAL(&_blinkMux);
 }
 
 /* ── getTarget ───────────────────────────────────────────────────────────── */
@@ -156,6 +232,7 @@ void FaceEngine::renderLoop(void)
 {
     if (!_drawBuf || !_frontBuf) {
         ESP_LOGE(TAG, "sprites não inicializados — encerrando task");
+        _task = nullptr;
         vTaskDelete(nullptr);
         return;
     }
@@ -194,34 +271,65 @@ void FaceEngine::renderLoop(void)
         _params = cur;
         taskEXIT_CRITICAL(&_paramMux);
 
-        /* 4. Micro-movimentos — oscilação senoidal suave nos olhos
-         *   gaze_x: 0.3 Hz × 1.5 px   gaze_y: 0.2 Hz × 1.0 px (fase 1.2 rad) */
-        const float t_sec   = (float)now_ms * 0.001f;
-        const int   micro_x = (int)roundf(sinf(6.28318f * 0.3f * t_sec) * 1.5f);
-        const int   micro_y = (int)roundf(sinf(6.28318f * 0.2f * t_sec + 1.2f) * 1.0f);
+        /* 3b. Blink é override visual de runtime: não altera a face base salva. */
+        float blink;
+        taskENTER_CRITICAL(&_blinkMux);
+        blink = _blink;
+        taskEXIT_CRITICAL(&_blinkMux);
+        if (blink > 0.0f) {
+            cur.open_l = lerpF(cur.open_l, 0.03f, blink);
+            cur.open_r = lerpF(cur.open_r, 0.03f, blink);
 
-        /* 4b. Gaze — offset de olhar do GazeService (escala: ±0.8 → ±20 px / ±12 px) */
+            cur.bl_l = lerp8(cur.bl_l, clamp8((int)cur.bl_l + 28, -40, 40), blink);
+            cur.br_l = lerp8(cur.br_l, clamp8((int)cur.br_l + 28, -40, 40), blink);
+            cur.bl_r = lerp8(cur.bl_r, clamp8((int)cur.bl_r + 28, -40, 40), blink);
+            cur.br_r = lerp8(cur.br_r, clamp8((int)cur.br_r + 28, -40, 40), blink);
+            cur.tl_l = lerp8(cur.tl_l, clamp8((int)cur.tl_l + 6, -40, 40), blink);
+            cur.tr_l = lerp8(cur.tr_l, clamp8((int)cur.tr_l + 6, -40, 40), blink);
+            cur.tl_r = lerp8(cur.tl_r, clamp8((int)cur.tl_r + 6, -40, 40), blink);
+            cur.tr_r = lerp8(cur.tr_r, clamp8((int)cur.tr_r + 6, -40, 40), blink);
+            cur.y_l  = lerp8(cur.y_l,  clamp8((int)cur.y_l - 4, -60, 60), blink);
+            cur.y_r  = lerp8(cur.y_r,  clamp8((int)cur.y_r - 4, -60, 60), blink);
+        }
+
+        /* 4. E18 runtime: drift suave por cima da face base.
+         * Pequenas oscilações contínuas dão vida sem redefinir a expressão. */
+        const float t_sec   = (float)now_ms * 0.001f;
+        const float drift_x = sinf(6.28318f * DRIFT_X_HZ * t_sec) * DRIFT_X_PX;
+        const float drift_y = sinf(6.28318f * DRIFT_Y_HZ * t_sec + 1.2f) * DRIFT_Y_PX;
+
+        /* 4b. Micro-movimentos discretos e suaves ao redor do gaze alvo.
+         * Atualizados em baixa frequência para evitar vibração mecânica. */
+        if (_nextMicroUpdateMs == 0u || now_ms >= _nextMicroUpdateMs) {
+            _micro_x = (randf_unit() * 2.0f - 1.0f) * MICRO_X_PX;
+            _micro_y = (randf_unit() * 2.0f - 1.0f) * MICRO_Y_PX;
+            _nextMicroUpdateMs = now_ms + 180u + (esp_random() % 241u); /* 180–420 ms */
+        }
+
+        /* 4c. Gaze — offset principal de olhar vindo do runtime (GazeService). */
         float gx, gy;
         taskENTER_CRITICAL(&_gazeMux);
         gx = _gaze_x;
         gy = _gaze_y;
         taskEXIT_CRITICAL(&_gazeMux);
-        const int gaze_px_x = (int)roundf(gx * 25.0f);
-        const int gaze_px_y = (int)roundf(gy * 15.0f);
+        const int gaze_px_x = (int)roundf(gx * 18.0f);
+        const int gaze_px_y = (int)roundf(gy * 12.0f);
 
-        /* 5. Renderiza na drawBuf com micro-offset + gaze */
-        drawFrame(cur, micro_x + gaze_px_x, micro_y + gaze_px_y);
+        /* 5. Renderiza com face base + gaze runtime + drift + micro offsets */
+        const int runtime_dx = (int)roundf((float)gaze_px_x + drift_x + _micro_x);
+        const int runtime_dy = (int)roundf((float)gaze_px_y + drift_y + _micro_y);
+        drawFrame(cur, runtime_dx, runtime_dy);
 
-        /* 5. Empurra para o display físico */
+        /* 6. Empurra para o display físico usando o buffer recém-renderizado */
         display_push_sprite(_drawBuf, 0, 0);
 
-        /* 6. Troca buffers */
+        /* 7. Troca buffers: o antigo front vira draw do próximo frame */
         std::swap(_drawBuf, _frontBuf);
 
-        /* 7. Alimenta WDT */
+        /* 8. Alimenta WDT */
         wdt_feed(nullptr);
 
-        /* 8. Estatísticas de FPS a cada 5 s */
+        /* 9. Estatísticas de FPS a cada 5 s */
         _frameCount++;
         if (now_ms - _fpsTimestamp >= 5000u) {
             const float fps = (float)_frameCount * 1000.f /
@@ -231,7 +339,7 @@ void FaceEngine::renderLoop(void)
             _fpsTimestamp = now_ms;
         }
 
-        /* 9. Aguarda próximo slot de 50 ms (20 Hz) */
+        /* 10. Aguarda próximo slot de 50 ms (20 Hz) */
         vTaskDelayUntil(&xLastWake, pdMS_TO_TICKS(50));
     }
 }
@@ -244,16 +352,32 @@ void FaceEngine::sRenderTask(void *arg)
 
 void FaceEngine::startTask(void)
 {
-    xTaskCreatePinnedToCore(
+    if (!_initialized) {
+        ESP_LOGE(TAG, "startTask falhou: face_engine nao inicializado");
+        return;
+    }
+
+    if (_task) {
+        ESP_LOGW(TAG, "startTask ignorado: FaceRenderTask ja criada");
+        return;
+    }
+
+    BaseType_t ok = xTaskCreatePinnedToCore(
         sRenderTask,
         "FaceRenderTask",
         8192,
         this,
         20,
-        nullptr,
+        &_task,
         1   /* Core 1 */
     );
-    ESP_LOGI(TAG, "FaceRenderTask criada no Core 1");
+
+    if (ok == pdPASS) {
+        ESP_LOGI(TAG, "FaceRenderTask criada no Core 1");
+    } else {
+        _task = nullptr;
+        ESP_LOGE(TAG, "falha ao criar FaceRenderTask");
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -283,4 +407,9 @@ extern "C" void face_engine_get_target(face_params_t *out)
 extern "C" void face_engine_set_gaze(float x, float y)
 {
     FaceEngine::instance().setGaze(x, y);
+}
+
+extern "C" void face_engine_set_blink(float amount)
+{
+    FaceEngine::instance().setBlink(amount);
 }

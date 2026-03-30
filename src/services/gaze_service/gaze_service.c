@@ -1,6 +1,7 @@
 #include "gaze_service.h"
 #include "face_engine.h"
 #include "event_bus.h"
+#include "blink_controller.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -17,6 +18,8 @@ static const char *TAG = "GAZE";
 #define OVERSHOOT_FACTOR    0.12f
 #define RETURN_MS           80u
 #define TICK_MS             100u
+#define SACCADE_MIN_MS      120u
+#define SACCADE_MAX_MS      350u
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -77,6 +80,19 @@ static float rand_gaussian(float mean, float stddev)
     return mean + stddev * z;
 }
 
+static uint16_t derive_duration_ms(float x, float y, uint16_t requested_ms)
+{
+    if (requested_ms > 0u) return requested_ms;
+
+    const float dx = x - s_cur_x;
+    const float dy = y - s_cur_y;
+    const float dist = sqrtf(dx * dx + dy * dy);
+    uint32_t ms = (uint32_t)(SACCADE_MIN_MS + dist * 260.0f);
+    if (ms < SACCADE_MIN_MS) ms = SACCADE_MIN_MS;
+    if (ms > SACCADE_MAX_MS) ms = SACCADE_MAX_MS;
+    return (uint16_t)ms;
+}
+
 /* Agenda o próximo disparo da deriva idle: rand(2000, 5000) ms */
 static void schedule_idle(void)
 {
@@ -101,10 +117,12 @@ static void set_target_locked(float x, float y, uint16_t duration_ms)
     s_dst_x = x;
     s_dst_y = y;
 
+    const uint16_t total_ms = derive_duration_ms(x, y, duration_ms);
     s_phase_start_ms = now_ms();
-    s_phase_dur_ms   = (uint32_t)((float)duration_ms * 0.7f);
+    s_phase_dur_ms   = (uint32_t)((float)total_ms * 0.7f);
     if (s_phase_dur_ms < 50u) s_phase_dur_ms = 50u;
 
+    blink_suppress(true);
     s_state = STATE_OVERSHOOT;
 }
 
@@ -143,6 +161,7 @@ static void gaze_service_tick(void)
             s_cur_y = s_dst_y;
             s_state = STATE_IDLE;
             schedule_idle();
+            blink_suppress(false);
             ESP_LOGD(TAG, "saccade ok  dst=(%.2f, %.2f)", s_dst_x, s_dst_y);
         } else {
             float te = ease_out(t);
@@ -196,6 +215,7 @@ void gaze_service_init(void)
     s_cur_x = 0.0f;
     s_cur_y = 0.0f;
     s_state = STATE_IDLE;
+    blink_suppress(false);
     schedule_idle();
 
     xTaskCreatePinnedToCore(
