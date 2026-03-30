@@ -1,6 +1,6 @@
 # E21 - Vetor de Estado Interno
 
-- Status: 🔲 Não iniciada
+- Status: ✅ Critérios atendidos
 - Complexidade: Baixa
 - Grupo: Gaze+Idle
 - HW Real: SIM

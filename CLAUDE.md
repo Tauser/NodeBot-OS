@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E16/E17/E18 - base da face refeita com referência EMO
-Ultima concluida   : E15 - Watchdog, Boot Sequence e PowerManager
-Proxima            : E19 - EmotionMapper (6 expressões base)
+Etapa em andamento : E22 - Idle Life (bocejo e variação orgânica)
+Ultima concluida   : E21 - Vetor de Estado Interno (state_vector_t)
+Proxima            : E22 - Idle Life — Bocejo e Variação Orgânica
 Branch git         : main
 ```
 

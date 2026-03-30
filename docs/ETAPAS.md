@@ -25,7 +25,7 @@ Listagem simples das etapas, com um arquivo Markdown por etapa em `docs/etapas/`
 | E18 | Micro-movimentos e Blink Automático | ✅ Critérios atendidos | [etapas/e18-micro-movimentos-e-blink-automatico.md](/D:/Projetos/NodeBot/docs/etapas/e18-micro-movimentos-e-blink-automatico.md) |
 | E19 | EmotionMapper — 6 Expressões Base | ✅ Critérios atendidos | [etapas/e19-emotionmapper-6-expressoes-base.md](/D:/Projetos/NodeBot/docs/etapas/e19-emotionmapper-6-expressoes-base.md) |
 | E20 | Gaze Loop e Saccades | 🔲 Não iniciada | [etapas/e20-gaze-loop-e-saccades.md](/D:/Projetos/NodeBot/docs/etapas/e20-gaze-loop-e-saccades.md) |
-| E21 | Vetor de Estado Interno | 🔲 Não iniciada | [etapas/e21-vetor-de-estado-interno.md](/D:/Projetos/NodeBot/docs/etapas/e21-vetor-de-estado-interno.md) |
+| E21 | Vetor de Estado Interno | ✅ Critérios atendidos | [etapas/e21-vetor-de-estado-interno.md](/D:/Projetos/NodeBot/docs/etapas/e21-vetor-de-estado-interno.md) |
 | E22 | Idle Life — Bocejo e Variação Orgânica | 🔲 Não iniciada | [etapas/e22-idle-life-bocejo-e-variacao-organica.md](/D:/Projetos/NodeBot/docs/etapas/e22-idle-life-bocejo-e-variacao-organica.md) |
 | E23 | MotionSafetyService | 🔲 Não iniciada | [etapas/e23-motionsafetyservice.md](/D:/Projetos/NodeBot/docs/etapas/e23-motionsafetyservice.md) |
 | E24 | HealthMonitor e Modos Degradados | 🔲 Não iniciada | [etapas/e24-healthmonitor-e-modos-degradados.md](/D:/Projetos/NodeBot/docs/etapas/e24-healthmonitor-e-modos-degradados.md) |
