@@ -202,11 +202,19 @@ void FaceEngine::setGaze(float x, float y)
 
 void FaceEngine::setBlink(float amount)
 {
-    if (amount < 0.0f) amount = 0.0f;
-    if (amount > 1.0f) amount = 1.0f;
+    setBlinkPair(amount, amount);
+}
+
+void FaceEngine::setBlinkPair(float left, float right)
+{
+    if (left < 0.0f) left = 0.0f;
+    if (left > 1.0f) left = 1.0f;
+    if (right < 0.0f) right = 0.0f;
+    if (right > 1.0f) right = 1.0f;
 
     taskENTER_CRITICAL(&_blinkMux);
-    _blink = amount;
+    _blink_l = left;
+    _blink_r = right;
     taskEXIT_CRITICAL(&_blinkMux);
 }
 
@@ -272,24 +280,26 @@ void FaceEngine::renderLoop(void)
         taskEXIT_CRITICAL(&_paramMux);
 
         /* 3b. Blink é override visual de runtime: não altera a face base salva. */
-        float blink;
+        float blink_l, blink_r;
         taskENTER_CRITICAL(&_blinkMux);
-        blink = _blink;
+        blink_l = _blink_l;
+        blink_r = _blink_r;
         taskEXIT_CRITICAL(&_blinkMux);
-        if (blink > 0.0f) {
-            cur.open_l = lerpF(cur.open_l, 0.03f, blink);
-            cur.open_r = lerpF(cur.open_r, 0.03f, blink);
-
-            cur.bl_l = lerp8(cur.bl_l, clamp8((int)cur.bl_l + 28, -40, 40), blink);
-            cur.br_l = lerp8(cur.br_l, clamp8((int)cur.br_l + 28, -40, 40), blink);
-            cur.bl_r = lerp8(cur.bl_r, clamp8((int)cur.bl_r + 28, -40, 40), blink);
-            cur.br_r = lerp8(cur.br_r, clamp8((int)cur.br_r + 28, -40, 40), blink);
-            cur.tl_l = lerp8(cur.tl_l, clamp8((int)cur.tl_l + 6, -40, 40), blink);
-            cur.tr_l = lerp8(cur.tr_l, clamp8((int)cur.tr_l + 6, -40, 40), blink);
-            cur.tl_r = lerp8(cur.tl_r, clamp8((int)cur.tl_r + 6, -40, 40), blink);
-            cur.tr_r = lerp8(cur.tr_r, clamp8((int)cur.tr_r + 6, -40, 40), blink);
-            cur.y_l  = lerp8(cur.y_l,  clamp8((int)cur.y_l - 4, -60, 60), blink);
-            cur.y_r  = lerp8(cur.y_r,  clamp8((int)cur.y_r - 4, -60, 60), blink);
+        if (blink_l > 0.0f) {
+            cur.open_l = lerpF(cur.open_l, 0.03f, blink_l);
+            cur.bl_l = lerp8(cur.bl_l, clamp8((int)cur.bl_l + 28, -40, 40), blink_l);
+            cur.br_l = lerp8(cur.br_l, clamp8((int)cur.br_l + 28, -40, 40), blink_l);
+            cur.tl_l = lerp8(cur.tl_l, clamp8((int)cur.tl_l + 6, -40, 40), blink_l);
+            cur.tr_l = lerp8(cur.tr_l, clamp8((int)cur.tr_l + 6, -40, 40), blink_l);
+            cur.y_l  = lerp8(cur.y_l,  clamp8((int)cur.y_l - 4, -60, 60), blink_l);
+        }
+        if (blink_r > 0.0f) {
+            cur.open_r = lerpF(cur.open_r, 0.03f, blink_r);
+            cur.bl_r = lerp8(cur.bl_r, clamp8((int)cur.bl_r + 28, -40, 40), blink_r);
+            cur.br_r = lerp8(cur.br_r, clamp8((int)cur.br_r + 28, -40, 40), blink_r);
+            cur.tl_r = lerp8(cur.tl_r, clamp8((int)cur.tl_r + 6, -40, 40), blink_r);
+            cur.tr_r = lerp8(cur.tr_r, clamp8((int)cur.tr_r + 6, -40, 40), blink_r);
+            cur.y_r  = lerp8(cur.y_r,  clamp8((int)cur.y_r - 4, -60, 60), blink_r);
         }
 
         /* 4. E18 runtime: drift suave por cima da face base.
@@ -312,8 +322,8 @@ void FaceEngine::renderLoop(void)
         gx = _gaze_x;
         gy = _gaze_y;
         taskEXIT_CRITICAL(&_gazeMux);
-        const int gaze_px_x = (int)roundf(gx * 18.0f);
-        const int gaze_px_y = (int)roundf(gy * 12.0f);
+        const int gaze_px_x = (int)roundf(gx * GAZE_X_SCALE_PX);
+        const int gaze_px_y = (int)roundf(gy * GAZE_Y_SCALE_PX);
 
         /* 5. Renderiza com face base + gaze runtime + drift + micro offsets */
         const int runtime_dx = (int)roundf((float)gaze_px_x + drift_x + _micro_x);
@@ -412,4 +422,9 @@ extern "C" void face_engine_set_gaze(float x, float y)
 extern "C" void face_engine_set_blink(float amount)
 {
     FaceEngine::instance().setBlink(amount);
+}
+
+extern "C" void face_engine_set_blink_pair(float left, float right)
+{
+    FaceEngine::instance().setBlinkPair(left, right);
 }

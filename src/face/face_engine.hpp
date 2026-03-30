@@ -48,6 +48,7 @@ public:
 
     /* Override visual de blink aplicado só no frame renderizado. */
     void setBlink(float amount);
+    void setBlinkPair(float left, float right);
 
 private:
     static constexpr int FB_W = 320;
@@ -58,6 +59,8 @@ private:
     static constexpr float DRIFT_Y_PX = 1.0f;
     static constexpr float MICRO_X_PX = 0.8f;
     static constexpr float MICRO_Y_PX = 0.6f;
+    static constexpr float GAZE_X_SCALE_PX = 60.0f;
+    static constexpr float GAZE_Y_SCALE_PX = 48.0f;
 
     lgfx::LGFX_Sprite *_drawBuf  = nullptr;
     lgfx::LGFX_Sprite *_frontBuf = nullptr;
@@ -82,7 +85,8 @@ private:
     volatile float _gaze_y = 0.0f;
     portMUX_TYPE   _gazeMux = portMUX_INITIALIZER_UNLOCKED;
 
-    volatile float _blink = 0.0f;
+    volatile float _blink_l = 0.0f;
+    volatile float _blink_r = 0.0f;
     portMUX_TYPE   _blinkMux = portMUX_INITIALIZER_UNLOCKED;
 
     /* E18: moduladores sutis de runtime por cima da face base */

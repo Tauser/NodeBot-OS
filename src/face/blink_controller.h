@@ -16,6 +16,8 @@
  *
  * O blink atua como override visual de runtime sobre a face atual.
  * Não troca a expressão base nem altera a emoção alvo salva no FaceEngine.
+ * A piscada pode ser levemente assimétrica entre olho esquerdo e direito
+ * para evitar aparência mecânica.
  *
  * Uso:
  *   blink_controller_init();       // cria uma única BlinkTask

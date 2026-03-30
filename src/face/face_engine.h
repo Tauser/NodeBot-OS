@@ -47,6 +47,12 @@ void face_engine_set_gaze(float x, float y);
  */
 void face_engine_set_blink(float amount);
 
+/*
+ * Override visual de blink separado por olho.
+ * left/right em [0,1].
+ */
+void face_engine_set_blink_pair(float left, float right);
+
 #ifdef __cplusplus
 }
 #endif

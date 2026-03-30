@@ -54,23 +54,31 @@ static uint32_t next_blink_delay_ms(void)
     return (uint32_t)min_ms + (esp_random() % span);
 }
 
-static bool animate_blink_phase(float from, float to, uint32_t duration_ms)
+static float randf_unit(void)
+{
+    return (float)(esp_random() & 0xFFFFu) / 65535.0f;
+}
+
+static bool animate_blink_phase(float from_l, float to_l,
+                                float from_r, float to_r,
+                                uint32_t duration_ms)
 {
     static constexpr uint32_t STEP_MS = 20u;
     const uint32_t steps = duration_ms / STEP_MS;
 
     if (steps == 0u) {
-        face_engine_set_blink(to);
+        face_engine_set_blink_pair(to_l, to_r);
         return !is_suppressed();
     }
 
     for (uint32_t i = 1; i <= steps; ++i) {
         if (is_suppressed()) {
-            face_engine_set_blink(0.0f);
+            face_engine_set_blink_pair(0.0f, 0.0f);
             return false;
         }
         const float t = (float)i / (float)steps;
-        face_engine_set_blink(from + (to - from) * t);
+        face_engine_set_blink_pair(from_l + (to_l - from_l) * t,
+                                   from_r + (to_r - from_r) * t);
         vTaskDelay(pdMS_TO_TICKS(STEP_MS));
     }
 
@@ -79,21 +87,28 @@ static bool animate_blink_phase(float from, float to, uint32_t duration_ms)
 
 static void do_blink(void)
 {
-    if (!animate_blink_phase(0.0f, 0.82f, CLOSE_MS)) {
+    const bool lead_left = (esp_random() & 1u) != 0u;
+    const float lag_amount = 0.82f + randf_unit() * 0.10f;  /* 0.82–0.92 */
+    const float lead_close = 1.00f;
+    const float lag_close = lag_amount;
+    const float close_l = lead_left ? lead_close : lag_close;
+    const float close_r = lead_left ? lag_close : lead_close;
+
+    if (!animate_blink_phase(0.0f, close_l, 0.0f, close_r, CLOSE_MS)) {
         ESP_LOGD(TAG, "blink abortado por supressao");
         return;
     }
 
-    face_engine_set_blink(1.0f);
+    face_engine_set_blink_pair(close_l, close_r);
     vTaskDelay(pdMS_TO_TICKS(HOLD_MS));
     if (is_suppressed()) {
-        face_engine_set_blink(0.0f);
+        face_engine_set_blink_pair(0.0f, 0.0f);
         ESP_LOGD(TAG, "blink abortado durante hold");
         return;
     }
 
-    animate_blink_phase(1.0f, 0.0f, OPEN_MS);
-    face_engine_set_blink(0.0f);
+    animate_blink_phase(close_l, 0.0f, close_r, 0.0f, OPEN_MS);
+    face_engine_set_blink_pair(0.0f, 0.0f);
     ESP_LOGD(TAG, "blink completo");
 }
 
@@ -168,11 +183,11 @@ void blink_suppress(bool suppress)
     taskEXIT_CRITICAL(&s_state_mux);
 
     if (!suppress) {
-        face_engine_set_blink(0.0f);
+        face_engine_set_blink_pair(0.0f, 0.0f);
         return;
     }
 
-    face_engine_set_blink(0.0f);
+    face_engine_set_blink_pair(0.0f, 0.0f);
 
     if (suppress && s_blink_task) {
         xTaskNotifyGive(s_blink_task);

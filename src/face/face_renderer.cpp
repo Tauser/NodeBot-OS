@@ -126,12 +126,16 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
     _spr->fillScreen(FACE_BG_COLOR);
 
     const int x_shift = (128 - (int)p.x_off) / 2;
-    const int cx_l = EYE_L_CX + x_shift + dx;
-    const int cx_r = EYE_R_CX - x_shift + dx;
+    const int parallax_x = clampi((int)roundf((float)dx * 0.18f), -12, 12);
+    const int parallax_y = clampi((int)roundf((float)dy * 0.10f), -6, 6);
+    const int cx_l = EYE_L_CX + x_shift + dx - parallax_x;
+    const int cx_r = EYE_R_CX - x_shift + dx + parallax_x;
+    const int oy_l = (int)p.y_l + dy - parallax_y;
+    const int oy_r = (int)p.y_r + dy + parallax_y;
 
     drawEye(cx_l, EYE_CY,
             p.tl_l, p.tr_l, p.bl_l, p.br_l,
-            p.open_l, (int8_t)((int)p.y_l + dy),
+            p.open_l, (int8_t)clampi(oy_l, -60, 60),
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot,
             p.squint_l,
@@ -139,7 +143,7 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
 
     drawEye(cx_r, EYE_CY,
             p.tl_r, p.tr_r, p.bl_r, p.br_r,
-            p.open_r, (int8_t)((int)p.y_r + dy),
+            p.open_r, (int8_t)clampi(oy_r, -60, 60),
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot,
             p.squint_r,
