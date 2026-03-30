@@ -6,6 +6,7 @@
 #include "driver/rmt_encoder.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_timer.h"
 
 /* ─── timing WS2812B (ns) ────────────────────────────────────────── */
 #define T0H_NS   400
@@ -27,6 +28,11 @@ static rmt_channel_handle_t  s_chan;
 static rmt_encoder_handle_t  s_encoder;
 static uint32_t              s_num_leds;
 static uint8_t               s_buf[MAX_LEDS][3]; /* GRB */
+
+/* ─── estado de sistema (LED 0) ───────────────────────────────────── */
+static led_state_t           s_state      = LED_STATE_NORMAL;
+static bool                  s_blink_on   = false;
+static esp_timer_handle_t    s_blink_timer = NULL;
 
 /* ─── encoder de bytes para símbolos RMT ─────────────────────────── */
 
@@ -122,6 +128,37 @@ static esp_err_t new_ws2812_encoder(rmt_encoder_handle_t *out)
     return ESP_OK;
 }
 
+/* ─── state machine helpers ───────────────────────────────────────── */
+
+/* Mapeamento estado → cor GRB do LED 0 (brightness ~12%) */
+static void apply_state_to_buf(void)
+{
+    uint8_t r = 0, g = 0, b = 0;
+    switch (s_state) {
+        case LED_STATE_NORMAL:                     g = 30;             break;
+        case LED_STATE_DEGRADED:    r = 24; g = 12;                    break;
+        case LED_STATE_LISTENING:   r = 30;                            break;
+        case LED_STATE_PRIVACY:     r = 20; g = 20; b = 20;            break;
+        case LED_STATE_CAMERA:
+            if (s_blink_on) { r = 30; } /* off = 0,0,0 */
+            break;
+    }
+    /* GRB order */
+    s_buf[0][0] = g;
+    s_buf[0][1] = r;
+    s_buf[0][2] = b;
+}
+
+static void blink_timer_cb(void *arg)
+{
+    (void)arg;
+    s_blink_on = !s_blink_on;
+    apply_state_to_buf();
+    /* transmite sem bloquear (queue profundidade 4) */
+    rmt_transmit_config_t tx = { .loop_count = 0 };
+    rmt_transmit(s_chan, s_encoder, s_buf, s_num_leds * 3, &tx);
+}
+
 /* ─────────────────────────────────────────────────────────────────── */
 
 void ws2812_init(gpio_num_t gpio, uint32_t num_leds)
@@ -153,8 +190,46 @@ void ws2812_set_pixel(uint32_t idx, uint8_t r, uint8_t g, uint8_t b)
 
 void ws2812_show(void)
 {
+    /* Estado de sistema sempre prevalece sobre LED 0 */
+    apply_state_to_buf();
     rmt_transmit_config_t tx = { .loop_count = 0 };
     ESP_ERROR_CHECK(rmt_transmit(s_chan, s_encoder,
                                  s_buf, s_num_leds * 3, &tx));
     rmt_tx_wait_all_done(s_chan, pdMS_TO_TICKS(100));
+}
+
+void ws2812_set_state(led_state_t state)
+{
+    /* Para blink anterior se existir */
+    if (s_blink_timer) {
+        esp_timer_stop(s_blink_timer);
+        if (state != LED_STATE_CAMERA) {
+            esp_timer_delete(s_blink_timer);
+            s_blink_timer = NULL;
+        }
+    }
+
+    s_state   = state;
+    s_blink_on = false;
+
+    if (state == LED_STATE_CAMERA) {
+        if (!s_blink_timer) {
+            esp_timer_create_args_t args = {
+                .callback = blink_timer_cb,
+                .name     = "led_blink",
+            };
+            if (esp_timer_create(&args, &s_blink_timer) == ESP_OK) {
+                esp_timer_start_periodic(s_blink_timer, 500000); /* 2 Hz */
+            }
+        } else {
+            esp_timer_start_periodic(s_blink_timer, 500000);
+        }
+    }
+
+    ws2812_show();
+}
+
+led_state_t ws2812_get_state(void)
+{
+    return s_state;
 }

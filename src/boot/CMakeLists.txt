@@ -16,4 +16,6 @@ idf_component_register(
         audio
         gaze_service
         behavior
+        brownout_handler
+        safe_mode
 )

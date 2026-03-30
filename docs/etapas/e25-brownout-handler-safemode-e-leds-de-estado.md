@@ -1,6 +1,6 @@
 # E25 - Brownout Handler, SafeMode e LEDs de Estado
 
-- Status: 🔲 Não iniciada
+- Status: ✅ Concluída
 - Complexidade: Alta
 - Grupo: Safety
 - HW Real: SIM
@@ -16,7 +16,7 @@ HW Real: SIM
 ID: E25
 Prioridade: P1
 Risco: ALTO
-Status: 🔲 Não iniciada
+Status: ✅ Concluída
 
 ## Objetivo
 

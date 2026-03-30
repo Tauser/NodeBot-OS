@@ -30,6 +30,8 @@ extern "C" {
 /* Áudio */
 #define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg            */
 #define EVT_AUDIO_KEYWORD    0x0302
+#define EVT_VOICE_ACTIVITY   0x0303   /* payload: uint8_t active (1=on/0=off) */
+#define EVT_WAKE_WORD        0x0304   /* sem payload                          */
 /* LED */
 #define EVT_LED_CMD          0x0401   /* payload: { uint8_t r,g,b,idx }      */
 /* Display */
@@ -41,6 +43,7 @@ extern "C" {
 /* Sistema */
 #define EVT_SYS_LOWBAT       0x0F01
 #define EVT_SYS_ERROR        0x0F02   /* payload: uint32_t error_code        */
+#define EVT_HEALTH_CHANGED   0x0F03   /* payload: health_event_t             */
 
 /* ── API ─────────────────────────────────────────────────────────────── */
 

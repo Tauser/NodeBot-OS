@@ -21,6 +21,8 @@
 #include "gaze_service.h"
 #include "state_vector.h"
 #include "idle_behavior.h"
+#include "brownout_handler.h"
+#include "safe_mode_service.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -96,6 +98,9 @@ esp_err_t app_boot(void)
     ESP_LOGI(TAG, "  NodeBot — boot sequence");
     ESP_LOGI(TAG, "══════════════════════════════════════");
 
+    /* ── PRÉ-BOOT: brownout handler (sem NVS ainda, só registo) ─────── */
+    brownout_handler_init();
+
     /* ── STEP 1: HAL ─────────────────────────────────────────────────── */
     /*
      * hal_init.h define apenas constantes de pinos — não há função de init.
@@ -107,6 +112,9 @@ esp_err_t app_boot(void)
 
     /* ── STEP 2: ConfigManager ───────────────────────────────────────── */
     BOOT_STEP(2, "config_manager", config_manager_init());
+
+    /* Safe mode check logo após NVS disponível */
+    BOOT_STEP(2, "safe_mode_check", safe_mode_check());
 
     /* ── STEP 3: StorageManager (sd_init via weak stub) ─────────────── */
     BOOT_STEP(3, "storage_manager", storage_manager_init());
@@ -139,6 +147,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (5, "imu",        imu_init());
     BOOT_STEP_V(5, "touch",      touch_driver_init());
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
+    ws2812_set_state(safe_mode_is_active() ? LED_STATE_DEGRADED : LED_STATE_NORMAL);
     BOOT_STEP_V(5, "audio",      audio_init());
 
     /* ── STEP 6: EventBus ────────────────────────────────────────────── */
@@ -155,6 +164,10 @@ esp_err_t app_boot(void)
     if (s_first_err == ESP_OK) {
         ESP_LOGI(TAG, "boot OK — todos os subsistemas inicializados");
         if (s_log_ready) log_write(LOG_INFO, "boot", "boot OK");
+        /* Inicia contagem de 60s para considerar boot estável */
+        if (!safe_mode_is_active()) {
+            safe_mode_start_stable_timer();
+        }
     } else {
         ESP_LOGW(TAG, "boot concluído com erros (first=0x%08X)", (unsigned)s_first_err);
         if (s_log_ready) log_write(LOG_WARN, "boot", "boot concluído com erros");

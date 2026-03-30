@@ -90,7 +90,7 @@
 /* ──────────────────────────────────────────────────────────────
  * RMT — WS2812 cadeia única (onboard → ext_0 → ext_1, 3 LEDs)
  * ────────────────────────────────────────────────────────────── */
-#define HAL_RMT_LED         48
+#define HAL_RMT_LED         19
 #define HAL_RMT_LED_COUNT   3    /* 1 onboard + 2 externos em série */
 
 /* ──────────────────────────────────────────────────────────────
@@ -158,12 +158,13 @@
  *    41 │ HAL_I2S_SCK             │ I2S BCLK            │ livre após DC→GPIO45
  *    44 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ R3 — [C1] resolvido
  *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
- *    48 │ HAL_RMT_LED             │ WS2812 × 3          │ fixo placa
+ *    19 │ HAL_RMT_LED             │ WS2812 × 3          │
  * ─────┴─────────────────────────┴─────────────────────┴────────────────────
  *  Livres  : nenhum — todos os 9 GPIOs disponíveis estão em uso
  *  CS/RST  : -1 (ST7789 CS hardwired GND; RST via SWRESET)
  *  PSRAM   : GPIO35-37 internos (indisponível)
- *  USB     : GPIO19-20 não expostos nos headers
+ *  GPIO19  : HAL_RMT_LED (WS2812) — realocado de GPIO48
+ *  USB     : GPIO20 não exposto nos headers
  * ════════════════════════════════════════════════════════════════
  *
  * EXEMPLO LovyanGFX (Bus_SPI + Panel_ST7789):

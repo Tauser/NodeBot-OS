@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E24 - HealthMonitor e Modos Degradados
-Ultima concluida   : E23 - MotionSafetyService (P22, Core 1, 5ms)
-Proxima            : E24 - HealthMonitor e Modos Degradados
+Etapa em andamento : E26 - TouchService e Reações Básicas
+Ultima concluida   : E25 - Brownout Handler, SafeMode e LEDs de Estado
+Proxima            : E26 - TouchService e Reações Básicas
 Branch git         : main
 ```
 
