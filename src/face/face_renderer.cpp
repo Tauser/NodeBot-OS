@@ -84,14 +84,17 @@ void FaceRenderer::drawEye(int cx, int cy,
                            uint8_t rt, uint8_t rb,
                            int8_t cv_top, int8_t cv_bot,
                            float squint,
+                           float width_scale,
                            uint16_t color)
 {
     if (!_spr) return;
 
     open_f = clampf(open_f, 0.03f, 1.0f);
     squint = clampf(squint, 0.0f, 1.0f);
+    width_scale = clampf(width_scale, 0.72f, 1.12f);
 
-    const int hw = EYE_W / 2;
+    const int eye_w = clampi((int)roundf((float)EYE_W * width_scale), 28, EYE_W + 10);
+    const int hw = eye_w / 2;
     const int h = clampi((int)roundf((float)EYE_H * open_f), 4, EYE_H);
 
     if ((int)rt > hw)  rt = (uint8_t)hw;
@@ -111,7 +114,7 @@ void FaceRenderer::drawEye(int cx, int cy,
     const int rise = (int)roundf((float)h * 0.55f * squint);
     if (rise > 0) {
         _spr->fillTriangle(xl, ybl, xr, ybr, xr, ybr - rise, FACE_BG_COLOR);
-        _spr->fillRect(xl, ybl + 1, EYE_W + 1, rise + 4, FACE_BG_COLOR);
+        _spr->fillRect(xl, ybl + 1, eye_w + 1, rise + 4, FACE_BG_COLOR);
     }
 
 }
@@ -126,12 +129,12 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
     _spr->fillScreen(FACE_BG_COLOR);
 
     const int x_shift = (128 - (int)p.x_off) / 2;
-    const int parallax_x = clampi((int)roundf((float)dx * 0.18f), -12, 12);
-    const int parallax_y = clampi((int)roundf((float)dy * 0.10f), -6, 6);
-    const int cx_l = EYE_L_CX + x_shift + dx - parallax_x;
-    const int cx_r = EYE_R_CX - x_shift + dx + parallax_x;
-    const int oy_l = (int)p.y_l + dy - parallax_y;
-    const int oy_r = (int)p.y_r + dy + parallax_y;
+    const int cx_l = EYE_L_CX + x_shift + dx;
+    const int cx_r = EYE_R_CX - x_shift + dx;
+    const int oy_l = (int)p.y_l + dy;
+    const int oy_r = (int)p.y_r + dy;
+    const float width_l = 1.0f;
+    const float width_r = 1.0f;
 
     drawEye(cx_l, EYE_CY,
             p.tl_l, p.tr_l, p.bl_l, p.br_l,
@@ -139,6 +142,7 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot,
             p.squint_l,
+            width_l,
             p.color);
 
     drawEye(cx_r, EYE_CY,
@@ -147,6 +151,7 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
             p.rt_top, p.rb_bot,
             p.cv_top, p.cv_bot,
             p.squint_r,
+            width_r,
             p.color);
 }
 

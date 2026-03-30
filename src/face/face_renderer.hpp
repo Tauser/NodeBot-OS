@@ -20,6 +20,7 @@ private:
                  uint8_t rt, uint8_t rb,
                  int8_t cv_top, int8_t cv_bot,
                  float squint,
+                 float width_scale,
                  uint16_t color);
 
     static void fillEyeColumns(lgfx::LGFX_Sprite *spr,
