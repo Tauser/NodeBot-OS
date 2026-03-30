@@ -1,6 +1,6 @@
 # E23 - MotionSafetyService
 
-- Status: 🔲 Não iniciada
+- Status: ✅ Critérios atendidos
 - Complexidade: Alta
 - Grupo: Safety
 - HW Real: SIM

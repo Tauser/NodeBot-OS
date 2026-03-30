@@ -3,6 +3,6 @@ idf_component_register(
                  "idle_behavior.c"
                  "gesture_service.c"
     INCLUDE_DIRS "."
-    REQUIRES     models face gaze_service event_bus
+    REQUIRES     models face gaze_service event_bus motion_safety
     PRIV_REQUIRES nvs_flash esp_timer freertos
 )

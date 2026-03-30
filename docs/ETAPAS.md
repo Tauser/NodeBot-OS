@@ -27,7 +27,7 @@ Listagem simples das etapas, com um arquivo Markdown por etapa em `docs/etapas/`
 | E20 | Gaze Loop e Saccades | 🔲 Não iniciada | [etapas/e20-gaze-loop-e-saccades.md](/D:/Projetos/NodeBot/docs/etapas/e20-gaze-loop-e-saccades.md) |
 | E21 | Vetor de Estado Interno | ✅ Critérios atendidos | [etapas/e21-vetor-de-estado-interno.md](/D:/Projetos/NodeBot/docs/etapas/e21-vetor-de-estado-interno.md) |
 | E22 | Idle Life — Bocejo e Variação Orgânica | ✅ Critérios atendidos | [etapas/e22-idle-life-bocejo-e-variacao-organica.md](/D:/Projetos/NodeBot/docs/etapas/e22-idle-life-bocejo-e-variacao-organica.md) |
-| E23 | MotionSafetyService | 🔲 Não iniciada | [etapas/e23-motionsafetyservice.md](/D:/Projetos/NodeBot/docs/etapas/e23-motionsafetyservice.md) |
+| E23 | MotionSafetyService | ✅ Critérios atendidos | [etapas/e23-motionsafetyservice.md](/D:/Projetos/NodeBot/docs/etapas/e23-motionsafetyservice.md) |
 | E24 | HealthMonitor e Modos Degradados | 🔲 Não iniciada | [etapas/e24-healthmonitor-e-modos-degradados.md](/D:/Projetos/NodeBot/docs/etapas/e24-healthmonitor-e-modos-degradados.md) |
 | E25 | Brownout Handler, SafeMode e LEDs de Estado | 🔲 Não iniciada | [etapas/e25-brownout-handler-safemode-e-leds-de-estado.md](/D:/Projetos/NodeBot/docs/etapas/e25-brownout-handler-safemode-e-leds-de-estado.md) |
 | E26 | TouchService e Reações Básicas | 🔲 Não iniciada | [etapas/e26-touchservice-e-reacoes-basicas.md](/D:/Projetos/NodeBot/docs/etapas/e26-touchservice-e-reacoes-basicas.md) |

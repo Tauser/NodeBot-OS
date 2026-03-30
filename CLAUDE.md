@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E23 - MotionSafetyService
-Ultima concluida   : E22 - Idle Life (bocejo e variação orgânica)
-Proxima            : E23 - MotionSafetyService (CRÍTICO — P22, Core 1, 5ms)
+Etapa em andamento : E24 - HealthMonitor e Modos Degradados
+Ultima concluida   : E23 - MotionSafetyService (P22, Core 1, 5ms)
+Proxima            : E24 - HealthMonitor e Modos Degradados
 Branch git         : main
 ```
 
