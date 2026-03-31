@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E29 - AudioFeedback e Playback
-Ultima concluida   : E28 - Pipeline de Captura de Áudio e VAD
-Proxima            : E30 - Wake Word Local (ESP-SR WakeNet)
+Etapa em andamento : E30 - Wake Word Local (ESP-SR WakeNet)
+Ultima concluida   : E29 - AudioFeedback e Playback
+Proxima            : E31 - Comandos Offline Mínimos
 Branch git         : main
 ```
 
