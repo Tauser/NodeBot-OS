@@ -6,6 +6,7 @@
 #include "dialogue_state_service.h"
 #include "safe_mode_service.h"
 #include "event_bus.h"
+#include "camera_service.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -112,8 +113,9 @@ static void fsm_update(uint32_t now_ms)
 static void behavior_loop_task(void *arg)
 {
     (void)arg;
-    TickType_t  last_wake     = xTaskGetTickCount();
-    uint32_t    tick_count    = 0u;
+    TickType_t  last_wake        = xTaskGetTickCount();
+    uint32_t    tick_count       = 0u;
+    uint32_t    last_cam_req_ms  = 0u;
 
     while (1) {
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(TICK_MS));
@@ -148,6 +150,18 @@ static void behavior_loop_task(void *arg)
         /* ── 5b. Mood derivado do StateVector (EMO_SPEC §3) — a cada 1s ─ */
         if (tick_count % 10u == 0u) {
             behavior_tree_apply_mood();
+        }
+
+        /* ── 5c. Câmera — sob demanda por estado ────────────────────── */
+        if (camera_service_is_ready()) {
+            uint32_t cam_interval_ms = 0u;
+            if (s_state == ENGINE_IDLE)     cam_interval_ms = 5000u;
+            else if (s_state == ENGINE_ENGAGED) cam_interval_ms = 10000u;
+            if (cam_interval_ms > 0u &&
+                (now_ms - last_cam_req_ms) >= cam_interval_ms) {
+                camera_service_request_frame();
+                last_cam_req_ms = now_ms;
+            }
         }
 
         /* ── 6. Log periódico (a cada 60 s) ─────────────────────────── */

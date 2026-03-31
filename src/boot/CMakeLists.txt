@@ -31,4 +31,5 @@ idf_component_register(
         mood_service
         attention_service
         engagement_service
+        camera_service
 )

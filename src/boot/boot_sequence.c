@@ -37,6 +37,7 @@
 #include "mood_service.h"
 #include "attention_service.h"
 #include "engagement_service.h"
+#include "camera_service.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -185,6 +186,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "mood_service",     mood_service_init());
     BOOT_STEP  (6, "attention_svc",    attention_service_init());
     BOOT_STEP  (6, "engagement_svc",   engagement_service_init());
+    BOOT_STEP  (6, "camera_service",   camera_service_init());
     BOOT_STEP  (6, "behavior_engine",  behavior_engine_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */

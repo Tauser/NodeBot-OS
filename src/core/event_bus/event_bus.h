@@ -64,6 +64,9 @@ typedef struct {
 #define EVT_GAZE_UPDATE      0x0601   /* payload: gaze_event_t { float x, y } */
 /* Servo / Safety */
 #define EVT_SERVO_BLOCKED    0x0701   /* payload: uint8_t servo_id           */
+/* Câmera (E36) */
+#define EVT_CAMERA_FRAME       0x0A01 /* payload: camera_frame_event_t        */
+#define EVT_PRESENCE_DETECTED  0x0A02 /* payload: presence_event_t            */
 /* Personagem (E35) */
 #define EVT_MOOD_CHANGED     0x0901   /* payload: mood_event_t { float valence, arousal } */
 #define EVT_LOW_ENGAGEMENT   0x0902   /* sem payload — inatividade > 10 min  */
