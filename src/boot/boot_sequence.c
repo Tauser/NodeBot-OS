@@ -163,6 +163,9 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "imu_service",   imu_service_init());
     BOOT_STEP  (6, "audio_capture",  audio_capture_init());
     BOOT_STEP  (6, "audio_feedback", audio_feedback_init());
+    /* TEST E29: toca BEEP_ACK no boot para verificar playback */
+    vTaskDelay(pdMS_TO_TICKS(200));   /* aguarda task subir */
+    audio_feedback_play(SOUND_BEEP_ACK);
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());
