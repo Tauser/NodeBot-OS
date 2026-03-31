@@ -24,7 +24,7 @@ static const char *TAG = "audio_fb";
 static const char *k_paths[SOUND_COUNT] = {
     [SOUND_BEEP_ACK]        = "/sdcard/sounds/beep_ack.pcm",
     [SOUND_DING_NOTIF]      = "/sdcard/sounds/ding_notif.pcm",
-    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_act.pcm",
+    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_ativate.pcm",
     [SOUND_CLICK_TOUCH]     = "/sdcard/sounds/click_touch.pcm",
     [SOUND_ERROR_TONE]      = "/sdcard/sounds/error_tone.pcm",
 };
@@ -75,7 +75,7 @@ static void load_fallback(sound_id_t id)
 static const char *k_wav_paths[SOUND_COUNT] = {
     [SOUND_BEEP_ACK]        = "/sdcard/sounds/beep_ack.wav",
     [SOUND_DING_NOTIF]      = "/sdcard/sounds/ding_notif.wav",
-    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_act.wav",
+    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_ativate.wav",
     [SOUND_CLICK_TOUCH]     = "/sdcard/sounds/click_touch.wav",
     [SOUND_ERROR_TONE]      = "/sdcard/sounds/error_tone.wav",
 };
