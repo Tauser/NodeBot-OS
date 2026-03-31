@@ -32,6 +32,7 @@
 #include "dialogue_state_service.h"
 #include "motion_safety_service.h"
 #include "behavior_engine.h"
+#include "persona_service.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -175,6 +176,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "tts",            tts_init());
     BOOT_STEP  (6, "dialogue_state", dialogue_state_service_init());
     BOOT_STEP_V(6, "motion_safety",  motion_safety_init());
+    BOOT_STEP  (6, "persona",         persona_service_init());
     BOOT_STEP  (6, "behavior_engine", behavior_engine_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */

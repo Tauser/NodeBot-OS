@@ -1,5 +1,6 @@
 #include "behavior_engine.h"
 #include "behavior_tree.h"
+#include "gesture_service.h"
 #include "state_vector.h"
 #include "motion_safety_service.h"
 #include "dialogue_state_service.h"
@@ -131,6 +132,9 @@ static void behavior_loop_task(void *arg)
         fsm_update(now_ms);
         xSemaphoreGive(s_mutex);
 
+        /* ── 4b. Gesture tick ───────────────────────────────────────── */
+        gesture_service_tick(now_ms);
+
         /* ── 5. Behavior tree ────────────────────────────────────────── */
         bt_context_t ctx = {
             .now_ms            = now_ms,
@@ -166,9 +170,9 @@ static void on_wake_word(uint16_t type, void *payload)
     uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000LL);
     s_last_wake_word_ms   = now_ms;
     s_last_interaction_ms = now_ms;
-    /* Atenção total */
     g_state.attention = 1.0f;
     state_vector_on_interaction();
+    gesture_perform(GESTURE_GREET);
 }
 
 static void on_touch_press(uint16_t type, void *payload)
