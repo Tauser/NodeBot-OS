@@ -36,7 +36,7 @@ typedef struct {
     face_priority_t priority;
 } face_params_t;
 
-#define FACE_EYE_COLOR      0x07FFu
+#define FACE_EYE_COLOR      0x04B6u  /* teal RGB(0,148,180) — era 0x07FF (ciano puro=branco) */
 #define FACE_BG_COLOR       0x0000u
 #define FACE_BLUE_ACCENT    0x441A
 #define FACE_YELLOW_ACCENT  0xFEA0

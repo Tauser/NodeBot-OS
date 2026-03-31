@@ -159,11 +159,11 @@ static void apply_state_to_buf(void)
 
     /* Alertas: calcula cor e aplica em todos os LEDs */
     switch (s_state) {
-        case LED_STATE_DEGRADED:    r = 24; g = 12;                    break;
-        case LED_STATE_LISTENING:   r = 30;                            break;
-        case LED_STATE_PRIVACY:     r = 20; g = 20; b = 20;            break;
+        case LED_STATE_DEGRADED:    r = 10; g = 5;                     break;
+        case LED_STATE_LISTENING:   r = 13;                            break;
+        case LED_STATE_PRIVACY:     r = 8;  g = 8;  b = 8;            break;
         case LED_STATE_CAMERA:
-            if (s_blink_on) { r = 30; }
+            if (s_blink_on) { r = 13; }
             break;
         default: break;
     }

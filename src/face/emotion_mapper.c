@@ -31,10 +31,10 @@ static void rgb565_to_led(uint16_t color, uint8_t *r, uint8_t *g, uint8_t *b)
     uint8_t r5 = (color >> 11) & 0x1F;
     uint8_t g6 = (color >>  5) & 0x3F;
     uint8_t b5 =  color        & 0x1F;
-    /* Escala para 0-30 (brightness ~12%) */
-    *r = (r5 * 30u) / 31u;
-    *g = (g6 * 30u) / 63u;
-    *b = (b5 * 30u) / 31u;
+    /* Escala para 0-13 (brightness ~5%) */
+    *r = (r5 * 13u) / 31u;
+    *g = (g6 * 13u) / 63u;
+    *b = (b5 * 13u) / 31u;
 }
 
 /* ── API ─────────────────────────────────────────────────────────────────── */
