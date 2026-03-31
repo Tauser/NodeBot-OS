@@ -99,11 +99,7 @@ static void wake_word_task(void *arg)
         /* Auto-supressão: evita re-trigger durante WHOOSH (~200ms) */
         wake_word_suppress_ms(SUPPRESS_AFTER_MS);
 
-        /* LED vermelho (estado "escutando") */
-        led_cmd_t led_red = { .r = 255u, .g = 0u, .b = 0u, .idx = LED_CMD_EMOTION };
-        event_bus_publish(EVT_LED_CMD, &led_red, sizeof(led_red), EVENT_PRIO_BEHAVIOR);
-
-        /* EVT_WAKE_WORD — audio_feedback.c subscreve e toca WHOOSH_ACTIVATE */
+        /* EVT_WAKE_WORD — audio_feedback.c toca WHOOSH; led_router seta LED_STATE_LISTENING */
         event_bus_publish(EVT_WAKE_WORD, NULL, 0u, EVENT_PRIO_BEHAVIOR);
 
         /* Reação facial */

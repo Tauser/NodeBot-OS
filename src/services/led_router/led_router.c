@@ -20,9 +20,16 @@ static void on_led_cmd(uint16_t type, void *payload)
     }
 }
 
+static void on_wake_word(uint16_t type, void *payload)
+{
+    (void)type; (void)payload;
+    ws2812_set_state(LED_STATE_LISTENING);
+}
+
 esp_err_t led_router_init(void)
 {
     esp_err_t err = event_bus_subscribe(EVT_LED_CMD, on_led_cmd);
+    err |= event_bus_subscribe(EVT_WAKE_WORD, on_wake_word);
     if (err == ESP_OK) {
         ESP_LOGI(TAG, "OK");
     }
