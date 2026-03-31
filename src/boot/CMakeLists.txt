@@ -10,6 +10,7 @@ idf_component_register(
         sd
         imu_service
         audio_capture
+        audio_feedback
         display
         face
         touch_service

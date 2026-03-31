@@ -17,6 +17,7 @@
 #include "imu_service.h"
 #include "touch_service.h"
 #include "audio_capture.h"
+#include "audio_feedback.h"
 #include "ws2812_driver.h"
 #include "audio_driver.h"
 #include "gaze_service.h"
@@ -160,7 +161,8 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "led_router",    led_router_init());
     BOOT_STEP  (6, "touch_service", touch_service_init());
     BOOT_STEP  (6, "imu_service",   imu_service_init());
-    BOOT_STEP  (6, "audio_capture", audio_capture_init());
+    BOOT_STEP  (6, "audio_capture",  audio_capture_init());
+    BOOT_STEP  (6, "audio_feedback", audio_feedback_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());
