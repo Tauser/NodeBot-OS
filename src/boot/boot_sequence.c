@@ -192,7 +192,8 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "mood_service",     mood_service_init());
     BOOT_STEP  (6, "attention_svc",    attention_service_init());
     BOOT_STEP  (6, "engagement_svc",   engagement_service_init());
-    BOOT_STEP  (6, "camera_service",   camera_service_init());
+    /* camera_service desativado até E08A HW validado (I2C_NUM_0 compartilhado com IMU) */
+    // BOOT_STEP  (6, "camera_service",   camera_service_init());
     BOOT_STEP  (6, "behavior_engine",  behavior_engine_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
