@@ -24,7 +24,7 @@ static const char *TAG = "imu_svc";
 
 /* SHAKE: variância da magnitude numa janela de 500ms */
 #define SHAKE_WINDOW         10u     /* amostras (10 × 50ms = 500ms)           */
-#define SHAKE_VAR_THRESHOLD  40000L  /* mg² — equivale a std dev ~200mg        */
+#define SHAKE_VAR_THRESHOLD  500000L /* mg² — piso em repouso ~100k; shake ~500k+ */
 #define SHAKE_COOLDOWN_MS    2000u
 
 /* TILT */
@@ -71,6 +71,7 @@ static void imu_service_task(void *arg)
 
         int16_t ax, ay, az;
         if (imu_get_accel_mg(&ax, &ay, &az) != ESP_OK) {
+            mag_count = 0;   /* invalida janela — leitura ruim corrompe variância */
             vTaskDelay(pdMS_TO_TICKS(POLL_MS));
             continue;
         }
