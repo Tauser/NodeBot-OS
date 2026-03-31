@@ -26,7 +26,9 @@ extern "C" {
 #define EVT_TOUCH_RELEASE    0x0102
 /* IMU */
 #define EVT_IMU_DATA         0x0201   /* payload: { int16_t ax,ay,az,gx,gy,gz } */
-#define EVT_IMU_FALL         0x0202
+#define EVT_IMU_FALL         0x0202   /* sem payload                             */
+#define EVT_IMU_SHAKE        0x0203   /* payload: imu_motion_event_t             */
+#define EVT_IMU_TILT         0x0204   /* payload: imu_motion_event_t             */
 /* Áudio */
 #define EVT_AUDIO_LEVEL      0x0301   /* payload: uint16_t rms_mg            */
 #define EVT_AUDIO_KEYWORD    0x0302

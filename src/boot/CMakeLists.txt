@@ -8,7 +8,7 @@ idf_component_register(
         log_manager
         event_bus
         sd
-        imu
+        imu_service
         display
         face
         touch_service
