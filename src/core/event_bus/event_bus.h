@@ -34,7 +34,9 @@ extern "C" {
 #define EVT_AUDIO_KEYWORD    0x0302
 #define EVT_VOICE_ACTIVITY   0x0303   /* payload: uint8_t active (1=on/0=off) */
 #define EVT_WAKE_WORD        0x0304   /* sem payload                          */
-#define EVT_INTENT_DETECTED  0x0305   /* payload: intent_event_t              */
+#define EVT_INTENT_DETECTED        0x0305   /* payload: intent_event_t              */
+#define EVT_TTS_DONE               0x0306   /* sem payload — frase terminou         */
+#define EVT_DIALOGUE_STATE_CHANGED 0x0307   /* payload: dialogue_state_event_t      */
 /* LED */
 #define EVT_LED_CMD          0x0401   /* payload: led_cmd_t                  */
 

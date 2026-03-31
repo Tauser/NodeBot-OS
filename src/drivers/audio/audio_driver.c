@@ -2,6 +2,7 @@
 #include "hal_init.h"
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
 #include "esp_err.h"
@@ -25,8 +26,9 @@ static i2s_chan_handle_t s_tx = NULL;
 static i2s_chan_handle_t s_rx = NULL;
 
 /* ── Estado ──────────────────────────────────────────────────────────────── */
-static uint8_t  s_vol = 80;
-static int32_t  s_raw[DMA_FRAMES * 2];   /* buffer estéreo 32-bit para RX */
+static uint8_t           s_vol = 80;
+static int32_t           s_raw[DMA_FRAMES * 2];
+static SemaphoreHandle_t s_play_mutex = NULL;   /* serializa audio_play_pcm */
 
 /* ── audio_init ──────────────────────────────────────────────────────────── */
 /*
@@ -79,6 +81,8 @@ void audio_init(void)
     ESP_ERROR_CHECK(i2s_channel_enable(s_tx));
     ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
 
+    s_play_mutex = xSemaphoreCreateMutex();
+
     ESP_LOGI(TAG, "I2S0 full-duplex OK — %u Hz  TX:GPIO%d  RX:GPIO%d  BCLK:GPIO%d",
              SAMPLE_RATE, HAL_I2S_AMP_DIN, HAL_I2S_MIC_SD, HAL_I2S_SCK);
 }
@@ -107,6 +111,7 @@ size_t audio_mic_read(int16_t *buf, size_t samples)
 /* ── audio_play_pcm ──────────────────────────────────────────────────────── */
 void audio_play_pcm(const int16_t *buf, size_t samples)
 {
+    if (s_play_mutex) xSemaphoreTake(s_play_mutex, portMAX_DELAY);
     int16_t tmp[DMA_FRAMES * 2];
     size_t  off = 0;
 
@@ -132,6 +137,7 @@ void audio_play_pcm(const int16_t *buf, size_t samples)
         size_t bw;
         i2s_channel_write(s_tx, tmp, sizeof(tmp), &bw, portMAX_DELAY);
     }
+    if (s_play_mutex) xSemaphoreGive(s_play_mutex);
 }
 
 /* ── audio_set_volume ────────────────────────────────────────────────────── */
