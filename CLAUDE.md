@@ -207,27 +207,24 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E26 - TouchService e Reações Básicas
-Ultima concluida   : E25 - Brownout Handler, SafeMode e LEDs de Estado
-Proxima            : E26 - TouchService e Reações Básicas
+Etapa em andamento : E28 - Pipeline de Captura de Áudio e VAD
+Ultima concluida   : E27 - IMUService e Eventos de Orientação
+Proxima            : E29 - AudioFeedback e Playback
 Branch git         : main
 ```
 
 ### Decisoes desta etapa que afetam as proximas
-- Face loop base deve operar em landscape 320x240 de ponta a ponta, inclusive caminhos de debug.
-- `face_engine_init()` e `face_engine_start_task()` precisam ser idempotentes para evitar duplicação de render task no boot/calibração.
-- `face_params_t` foi expandida mantendo compatibilidade com a geometria legada para não quebrar blink/idle durante a transição para o modelo EMO.
-- O renderer da face agora considera gaze, squint e highlight diretamente em `face_renderer`.
-- Blink automático deve usar uma única BlinkTask, sem criar tasks descartáveis por trigger.
-- `blink_suppress()` precisa abortar a piscada ainda em progresso para coexistir com saccades e animações futuras.
+- TouchService: tap/double tap/carinho/hold longo + contador de irritação. Componente `touch_service`.
+- IMUService: FALL→emergency_stop, SHAKE (threshold 300k mg²), TILT (>40° por 2s, re-arma só após voltar ao plano).
+- I2C barramento compartilhado GPIO4/5 com OV2640; retry 3× no driver para falhas esporádicas.
+- EVT_IMU_SHAKE (0x0203) e EVT_IMU_TILT (0x0204) adicionados ao event_bus.
+- API pública: `imu_service_is_upright()` + `imu_service_get_tilt_deg()`.
 
-### Criterios de pronto
-- [ ] FPS >= 18 medido por 5 minutos contínuos
-- [ ] CPU da FaceRenderTask <= 25%
-- [ ] Zero tearing visual
-- [ ] 30s de observação: face nunca está completamente parada
-- [ ] Blink: taxa entre 12–20 por minuto (contar em 1 minuto)
-- [ ] Observador externo descreve como "respira" ou "está pensando" em 10s de observação
+### Criterios de pronto (E28)
+- [ ] AudioCaptureTask no Core 0 com buffer circular
+- [ ] VAD por energia + ZCR detecta fala vs silêncio
+- [ ] EVT_VOICE_ACTIVITY publicado corretamente
+- [ ] Sem vazamento de memória no pipeline de captura
 
 ---
 
