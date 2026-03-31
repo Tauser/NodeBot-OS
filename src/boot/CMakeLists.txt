@@ -27,4 +27,8 @@ idf_component_register(
         dialogue_state
         motion_safety
         behavior
+        preference_memory
+        mood_service
+        attention_service
+        engagement_service
 )
