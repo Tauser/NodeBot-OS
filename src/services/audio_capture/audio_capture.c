@@ -60,12 +60,29 @@ static void audio_capture_task(void *arg)
         /* VAD */
         vad_event_t vad = vad_process(block, total);
 
+        /* Log periódico de diagnóstico — a cada ~3s (96 blocos × 32ms) */
+        static uint32_t s_diag_count = 0;
+        static float    s_rms_max    = 0.0f;
+        {
+            /* Recomputa RMS para o log (sem custo extra — bloco já em cache) */
+            int64_t sq = 0;
+            for (size_t i = 0; i < total; i++) { int32_t v = block[i]; sq += v*v; }
+            float rms_now = sqrtf((float)sq / (float)total);
+            if (rms_now > s_rms_max) s_rms_max = rms_now;
+        }
+        if (++s_diag_count >= 96u) {
+            ESP_LOGI(TAG, "rms_peak=%.0f  vad_thr=%d  speech=%s",
+                     (double)s_rms_max, 200, last_is_speech ? "ON" : "OFF");
+            s_rms_max    = 0.0f;
+            s_diag_count = 0u;
+        }
+
         /* Publica EVT_VOICE_ACTIVITY apenas quando o estado muda */
         if (vad.is_speech != last_is_speech) {
             last_is_speech = vad.is_speech;
             event_bus_publish(EVT_VOICE_ACTIVITY, &vad, sizeof(vad),
                               EVENT_PRIO_BEHAVIOR);
-            ESP_LOGD(TAG, "VAD %s  energy=%.1f dB",
+            ESP_LOGI(TAG, "VAD %s  energy=%.1f dB",
                      vad.is_speech ? "ON " : "OFF", (double)vad.energy_db);
         }
 
