@@ -29,10 +29,13 @@ static rmt_encoder_handle_t  s_encoder;
 static uint32_t              s_num_leds;
 static uint8_t               s_buf[MAX_LEDS][3]; /* GRB */
 
-/* ─── estado de sistema (LED 0) ───────────────────────────────────── */
+/* ─── estado de sistema e cor emocional ───────────────────────────── */
 static led_state_t           s_state      = LED_STATE_NORMAL;
 static bool                  s_blink_on   = false;
 static esp_timer_handle_t    s_blink_timer = NULL;
+
+/* Cor emocional para LEDs 1+2 (usada quando state == LED_STATE_NORMAL) */
+static uint8_t               s_emo_r = 0, s_emo_g = 0, s_emo_b = 0;
 
 /* ─── encoder de bytes para símbolos RMT ─────────────────────────── */
 
@@ -130,23 +133,43 @@ static esp_err_t new_ws2812_encoder(rmt_encoder_handle_t *out)
 
 /* ─── state machine helpers ───────────────────────────────────────── */
 
-/* Mapeamento estado → cor GRB do LED 0 (brightness ~12%) */
+/* Aplica estado ao buffer GRB.
+ *
+ * LED_STATE_NORMAL:
+ *   LED 0    → verde (sistema OK)
+ *   LED 1+2  → cor emocional (s_emo_*)
+ *
+ * Outros estados (alertas):
+ *   LED 0+1+2 → cor do alerta
+ */
 static void apply_state_to_buf(void)
 {
     uint8_t r = 0, g = 0, b = 0;
+
+    if (s_state == LED_STATE_NORMAL) {
+        /* LED 0: indicador de sistema — verde */
+        s_buf[0][0] = 30; s_buf[0][1] = 0;  s_buf[0][2] = 0;  /* GRB: G=30 */
+        /* LED 1+2: cor emocional sincronizada */
+        s_buf[1][0] = s_emo_g; s_buf[1][1] = s_emo_r; s_buf[1][2] = s_emo_b;
+        s_buf[2][0] = s_emo_g; s_buf[2][1] = s_emo_r; s_buf[2][2] = s_emo_b;
+        return;
+    }
+
+    /* Alertas: calcula cor e aplica em todos os LEDs */
     switch (s_state) {
-        case LED_STATE_NORMAL:                     g = 30;             break;
         case LED_STATE_DEGRADED:    r = 24; g = 12;                    break;
         case LED_STATE_LISTENING:   r = 30;                            break;
         case LED_STATE_PRIVACY:     r = 20; g = 20; b = 20;            break;
         case LED_STATE_CAMERA:
-            if (s_blink_on) { r = 30; } /* off = 0,0,0 */
+            if (s_blink_on) { r = 30; }
             break;
+        default: break;
     }
-    /* GRB order */
-    s_buf[0][0] = g;
-    s_buf[0][1] = r;
-    s_buf[0][2] = b;
+    for (int i = 0; i < 3; i++) {
+        s_buf[i][0] = g;  /* GRB */
+        s_buf[i][1] = r;
+        s_buf[i][2] = b;
+    }
 }
 
 static void blink_timer_cb(void *arg)
@@ -232,4 +255,15 @@ void ws2812_set_state(led_state_t state)
 led_state_t ws2812_get_state(void)
 {
     return s_state;
+}
+
+void ws2812_set_emotion_color(uint8_t r, uint8_t g, uint8_t b)
+{
+    s_emo_r = r;
+    s_emo_g = g;
+    s_emo_b = b;
+    /* Aplica imediatamente só se não houver alerta ativo */
+    if (s_state == LED_STATE_NORMAL) {
+        ws2812_show();
+    }
 }

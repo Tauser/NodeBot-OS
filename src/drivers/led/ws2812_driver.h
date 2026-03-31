@@ -30,13 +30,29 @@ void ws2812_set_pixel(uint32_t idx, uint8_t r, uint8_t g, uint8_t b);
  * Sempre aplica o estado de sistema sobre LED 0 antes de transmitir. */
 void ws2812_show(void);
 
-/* Define o estado de sistema (LED 0). Aplica imediatamente.
- * LED_STATE_CAMERA inicia blink automático a 2 Hz via esp_timer.
+/* Define o estado de sistema. Aplica imediatamente em todos os LEDs.
+ *
+ * LED_STATE_NORMAL:
+ *   LED 0  → verde (sistema OK)
+ *   LED 1+2 → cor emocional definida por ws2812_set_emotion_color()
+ *
+ * Outros estados (alertas — sobrescrevem LED 1+2 também):
+ *   LED_STATE_DEGRADED  → âmbar em todos
+ *   LED_STATE_LISTENING → vermelho fixo em todos
+ *   LED_STATE_CAMERA    → vermelho piscante em todos (2 Hz via esp_timer)
+ *   LED_STATE_PRIVACY   → branco em todos
+ *
  * Única forma de sobrescrever: chamar novamente ws2812_set_state(). */
 void ws2812_set_state(led_state_t state);
 
 /* Retorna o estado de sistema atual. */
 led_state_t ws2812_get_state(void);
+
+/* Define a cor emocional dos LEDs externos (1 e 2, sempre sincronizados).
+ * Ativada automaticamente quando state == LED_STATE_NORMAL.
+ * Chamada pelo face/behavior para sincronizar LEDs com a expressão dos olhos.
+ * Não tem efeito imediato se um alerta de estado estiver ativo. */
+void ws2812_set_emotion_color(uint8_t r, uint8_t g, uint8_t b);
 
 #ifdef __cplusplus
 }
