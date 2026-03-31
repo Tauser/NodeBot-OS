@@ -11,7 +11,7 @@ idf_component_register(
         imu
         display
         face
-        touch
+        touch_service
         led
         audio
         gaze_service

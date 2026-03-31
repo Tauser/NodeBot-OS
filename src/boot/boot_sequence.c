@@ -15,7 +15,7 @@
 #include "face_debug.h"
 #include "blink_controller.h"
 #include "imu_driver.h"
-#include "touch_driver.h"
+#include "touch_service.h"
 #include "ws2812_driver.h"
 #include "audio_driver.h"
 #include "gaze_service.h"
@@ -146,7 +146,7 @@ esp_err_t app_boot(void)
     BOOT_STEP_V(5, "face_render", face_engine_start_task());
     BOOT_STEP_V(5, "blink_ctrl", blink_controller_init());
     BOOT_STEP  (5, "imu",        imu_init());
-    BOOT_STEP_V(5, "touch",      touch_driver_init());
+    /* touch_service_init() inicializa o driver internamente */
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
     ws2812_set_state(safe_mode_is_active() ? LED_STATE_DEGRADED : LED_STATE_NORMAL);
     BOOT_STEP_V(5, "audio",      audio_init());
@@ -158,6 +158,7 @@ esp_err_t app_boot(void)
     BOOT_STEP_V(6, "state_vector",  state_vector_init());
     BOOT_STEP_V(6, "idle_behavior", idle_behavior_init());
     BOOT_STEP  (6, "led_router",    led_router_init());
+    BOOT_STEP  (6, "touch_service", touch_service_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());
