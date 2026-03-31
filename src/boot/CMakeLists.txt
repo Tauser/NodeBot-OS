@@ -32,4 +32,5 @@ idf_component_register(
         attention_service
         engagement_service
         camera_service
+        drv_camera
 )

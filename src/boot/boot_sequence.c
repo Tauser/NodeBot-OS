@@ -38,6 +38,7 @@
 #include "attention_service.h"
 #include "engagement_service.h"
 #include "camera_service.h"
+#include "camera_bringup.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -159,6 +160,11 @@ esp_err_t app_boot(void)
     // PRODUÇÃO: trocar a linha acima por:
     BOOT_STEP_V(5, "face_render", face_engine_start_task());
     BOOT_STEP_V(5, "blink_ctrl", blink_controller_init());
+    /* E08A bring-up câmera: descomentar para validação HW; manter comentado em produção.
+     * DEVE ficar antes de imu_service_init (Regra R1: SCCB não pode disputar I2C_NUM_0). */
+    // BOOT_STEP(5, "cam_bringup_init",    camera_bringup_init());
+    // BOOT_STEP(5, "cam_bringup_20x",     camera_bringup_capture_n(20, 50));
+
     /* touch_service_init() e imu_service_init() inicializam seus drivers internamente */
     BOOT_STEP_V(5, "ws2812",     ws2812_init(HAL_RMT_LED, HAL_RMT_LED_COUNT));
     ws2812_set_state(safe_mode_is_active() ? LED_STATE_DEGRADED : LED_STATE_NORMAL);
