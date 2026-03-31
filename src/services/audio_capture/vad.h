@@ -30,7 +30,7 @@ void vad_init(void);
  * count deve ser o tamanho do bloco (tipicamente 512).
  * Thread-safe (apenas leitura de estado imutável + volatile gate).
  */
-vad_event_t vad_process(const int16_t *samples, size_t count);
+vad_event_t nb_vad_process(const int16_t *samples, size_t count);
 
 /*
  * Suprime detecção de fala por `ms` milissegundos.

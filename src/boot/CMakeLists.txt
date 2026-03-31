@@ -11,6 +11,7 @@ idf_component_register(
         imu_service
         audio_capture
         audio_feedback
+        wake_word
         display
         face
         touch_service

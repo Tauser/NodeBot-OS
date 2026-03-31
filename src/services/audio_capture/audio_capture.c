@@ -64,7 +64,7 @@ static void audio_capture_task(void *arg)
         if (total == 0) continue;
 
         /* VAD bruto */
-        vad_event_t vad = vad_process(block, total);
+        vad_event_t vad = nb_vad_process(block, total);
 
         /* Aplica hangover: se detectou fala, reinicia contador;
          * enquanto contador > 0, força is_speech=true */

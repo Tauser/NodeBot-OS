@@ -207,24 +207,25 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E30 - Wake Word Local (ESP-SR WakeNet)
-Ultima concluida   : E29 - AudioFeedback e Playback
-Proxima            : E31 - Comandos Offline Mínimos
+Etapa em andamento : E31 - Comandos Offline Mínimos
+Ultima concluida   : E30 - Wake Word Local (ESP-SR WakeNet)
+Proxima            : E32 - TTS Pré-gravado e DialogueStateService
 Branch git         : main
 ```
 
 ### Decisoes desta etapa que afetam as proximas
-- TouchService: tap/double tap/carinho/hold longo + contador de irritação. Componente `touch_service`.
-- IMUService: FALL→emergency_stop, SHAKE (threshold 300k mg²), TILT (>40° por 2s, re-arma só após voltar ao plano).
-- I2C barramento compartilhado GPIO4/5 com OV2640; retry 3× no driver para falhas esporádicas.
-- EVT_IMU_SHAKE (0x0203) e EVT_IMU_TILT (0x0204) adicionados ao event_bus.
-- API pública: `imu_service_is_upright()` + `imu_service_get_tilt_deg()`.
+- WakeWordService: AFE pipeline (afe_config_init "M") + WakeNet, Core 0 P15, auto-supressão 800ms.
+- Colisão de nome: `vad_process` do esp-sr conflita com o nosso — renomeado para `nb_vad_process` em vad.h/vad.c/audio_capture.c.
+- esp-sr instalado via component manager: `main/idf_component.yml` + `managed_components/espressif__esp-sr`.
+- Wake word detectada → EVT_LED_CMD (vermelho) + EVT_WAKE_WORD + emotion_mapper_apply(SURPRISED).
+- audio_feedback.c já subscreve EVT_WAKE_WORD e toca WHOOSH_ACTIVATE (não chamar direto de wake_word.c).
+- `wake_word_suppress_ms(ms)` disponível para chamar ao iniciar TTS (E32).
 
-### Criterios de pronto (E28)
-- [ ] AudioCaptureTask no Core 0 com buffer circular
-- [ ] VAD por energia + ZCR detecta fala vs silêncio
-- [ ] EVT_VOICE_ACTIVITY publicado corretamente
-- [ ] Sem vazamento de memória no pipeline de captura
+### Criterios de pronto (E30)
+- [x] WakeNet rodando no Core 0 via AFE pipeline
+- [x] EVT_WAKE_WORD publicado na detecção
+- [x] Auto-supressão 800ms pós-detecção
+- [ ] 50 pronunciações: ≥ 42 detectadas (teste em HW)
 
 ---
 

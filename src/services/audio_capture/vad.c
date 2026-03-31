@@ -33,7 +33,7 @@ void vad_init(void)
     ESP_LOGI(TAG, "rms_threshold=%"PRId32, s_rms_threshold);
 }
 
-vad_event_t vad_process(const int16_t *samples, size_t count)
+vad_event_t nb_vad_process(const int16_t *samples, size_t count)
 {
     vad_event_t result = { .energy_db = -96.0f, .is_speech = false };
 
