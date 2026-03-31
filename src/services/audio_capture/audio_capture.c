@@ -48,7 +48,12 @@ static void audio_capture_task(void *arg)
     /* Buffer de bloco na stack (512 × 2 = 1KB — dentro do TASK_STACK) */
     int16_t block[AUDIO_CAPTURE_BLOCK_SAMPLES];
 
-    bool last_is_speech = false;
+    bool     last_is_speech = false;
+    uint8_t  hangover       = 0u;   /* blocos restantes de hangover           */
+
+/* Hangover: mantém is_speech=true por N blocos após o último frame de fala.
+ * 10 blocos × 32ms = 320ms — evita flickering entre fonemas. */
+#define HANGOVER_BLOCKS 10u
 
     while (1) {
         /* Lê 512 amostras em duas chamadas de 256 (limite do driver) */
@@ -58,8 +63,17 @@ static void audio_capture_task(void *arg)
 
         if (total == 0) continue;
 
-        /* VAD */
+        /* VAD bruto */
         vad_event_t vad = vad_process(block, total);
+
+        /* Aplica hangover: se detectou fala, reinicia contador;
+         * enquanto contador > 0, força is_speech=true */
+        if (vad.is_speech) {
+            hangover = HANGOVER_BLOCKS;
+        } else if (hangover > 0u) {
+            hangover--;
+            vad.is_speech = true;
+        }
 
         /* Log periódico de diagnóstico — a cada ~3s (96 blocos × 32ms) */
         static uint32_t s_diag_count = 0;
