@@ -23,6 +23,7 @@
 #include "idle_behavior.h"
 #include "brownout_handler.h"
 #include "safe_mode_service.h"
+#include "led_router.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -156,6 +157,7 @@ esp_err_t app_boot(void)
     BOOT_STEP_V(6, "gaze_service",  gaze_service_init());
     BOOT_STEP_V(6, "state_vector",  state_vector_init());
     BOOT_STEP_V(6, "idle_behavior", idle_behavior_init());
+    BOOT_STEP  (6, "led_router",    led_router_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());

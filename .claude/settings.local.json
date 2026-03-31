@@ -4,7 +4,12 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(idf.py build:*)",
+      "Bash(cmd.exe /c \"cd /d D:\\\\\\\\Projetos\\\\\\\\NodeBot && idf.py build 2>&1\")",
+      "Bash(xargs grep:*)",
+      "Bash(cmd /c \"C:/Users/Tauser/.espressif/python_env/idf5.5_py3.11_env/Scripts/python.exe %IDF_PATH%/tools/idf.py build 2>&1\")",
+      "Bash(powershell -Command \"& { . ''''C:/Users/Tauser/.espressif/idf_cmd_init.ps1'''' 2>$null; idf.py build 2>&1 | Select-Object -Last 60 }\")"
     ]
   }
 }

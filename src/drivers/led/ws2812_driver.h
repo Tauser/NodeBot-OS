@@ -33,10 +33,10 @@ void ws2812_show(void);
 /* Define o estado de sistema. Aplica imediatamente em todos os LEDs.
  *
  * LED_STATE_NORMAL:
- *   LED 0  → verde (sistema OK)
- *   LED 1+2 → cor emocional definida por ws2812_set_emotion_color()
+ *   Todos os LEDs → cor emocional (ws2812_set_emotion_color).
+ *   Verde de boot desaparece na primeira chamada de emotion_mapper_apply().
  *
- * Outros estados (alertas — sobrescrevem LED 1+2 também):
+ * Alertas (persistem até ws2812_set_state(NORMAL) ser chamado):
  *   LED_STATE_DEGRADED  → âmbar em todos
  *   LED_STATE_LISTENING → vermelho fixo em todos
  *   LED_STATE_CAMERA    → vermelho piscante em todos (2 Hz via esp_timer)

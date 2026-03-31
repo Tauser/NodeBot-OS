@@ -147,11 +147,13 @@ static void apply_state_to_buf(void)
     uint8_t r = 0, g = 0, b = 0;
 
     if (s_state == LED_STATE_NORMAL) {
-        /* LED 0: indicador de sistema — verde */
-        s_buf[0][0] = 30; s_buf[0][1] = 0;  s_buf[0][2] = 0;  /* GRB: G=30 */
-        /* LED 1+2: cor emocional sincronizada */
-        s_buf[1][0] = s_emo_g; s_buf[1][1] = s_emo_r; s_buf[1][2] = s_emo_b;
-        s_buf[2][0] = s_emo_g; s_buf[2][1] = s_emo_r; s_buf[2][2] = s_emo_b;
+        /* Todos os LEDs mostram a cor emocional.
+         * Verde de boot some assim que emotion_mapper_apply() disparar. */
+        for (int i = 0; i < 3; i++) {
+            s_buf[i][0] = s_emo_g;
+            s_buf[i][1] = s_emo_r;
+            s_buf[i][2] = s_emo_b;
+        }
         return;
     }
 

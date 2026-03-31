@@ -18,4 +18,5 @@ idf_component_register(
         behavior
         brownout_handler
         safe_mode
+        led_router
 )

@@ -33,7 +33,15 @@ extern "C" {
 #define EVT_VOICE_ACTIVITY   0x0303   /* payload: uint8_t active (1=on/0=off) */
 #define EVT_WAKE_WORD        0x0304   /* sem payload                          */
 /* LED */
-#define EVT_LED_CMD          0x0401   /* payload: { uint8_t r,g,b,idx }      */
+#define EVT_LED_CMD          0x0401   /* payload: led_cmd_t                  */
+
+/* idx=0xFF → set emotion color (LEDs 1+2 sincronizados)
+ * idx=0..N → set pixel individual                       */
+typedef struct {
+    uint8_t r, g, b;
+    uint8_t idx;
+} led_cmd_t;
+#define LED_CMD_EMOTION  0xFF   /* idx magic: set emotion color */
 /* Display */
 #define EVT_DISPLAY_CMD      0x0501
 /* Gaze */

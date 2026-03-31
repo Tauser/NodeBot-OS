@@ -1,5 +1,6 @@
 #include "emotion_mapper.h"
 #include "face_engine.h"
+#include "event_bus.h"
 
 /* ── Tabela de mapeamento emoção → expressão ────────────────────────────── */
 /*
@@ -24,6 +25,18 @@ static const char *const s_names[EMOTION_COUNT] = {
     [EMOTION_SURPRISED] = "SURPRISED",
 };
 
+/* ── Converte RGB565 → RGB88 com brightness cap (~12%) ──────────────────── */
+static void rgb565_to_led(uint16_t color, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    uint8_t r5 = (color >> 11) & 0x1F;
+    uint8_t g6 = (color >>  5) & 0x3F;
+    uint8_t b5 =  color        & 0x1F;
+    /* Escala para 0-30 (brightness ~12%) */
+    *r = (r5 * 30u) / 31u;
+    *g = (g6 * 30u) / 63u;
+    *b = (b5 * 30u) / 31u;
+}
+
 /* ── API ─────────────────────────────────────────────────────────────────── */
 
 bool emotion_mapper_get(emotion_t e, face_params_t *out)
@@ -47,6 +60,12 @@ void emotion_mapper_apply(emotion_t e, uint16_t transition_ms)
         p.transition_ms = transition_ms;
     }
     face_engine_apply_params(&p);
+
+    /* Sincroniza LEDs externos com a cor accent da expressão */
+    led_cmd_t cmd;
+    rgb565_to_led(p.color, &cmd.r, &cmd.g, &cmd.b);
+    cmd.idx = LED_CMD_EMOTION;
+    event_bus_publish(EVT_LED_CMD, &cmd, sizeof(cmd), EVENT_PRIO_COSMETIC);
 }
 
 const char *emotion_name(emotion_t e)
