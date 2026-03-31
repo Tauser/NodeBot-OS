@@ -2,6 +2,7 @@
 #include "audio_driver.h"
 #include "sd_driver.h"
 #include "vad.h"
+#include "event_bus.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -149,6 +150,18 @@ static void audio_playback_task(void *arg)
 
 /* ── API pública ───────────────────────────────────────────────────────── */
 
+static void on_touch_press(uint16_t type, void *payload)
+{
+    (void)type; (void)payload;
+    audio_feedback_play(SOUND_CLICK_TOUCH);
+}
+
+static void on_wake_word(uint16_t type, void *payload)
+{
+    (void)type; (void)payload;
+    audio_feedback_play(SOUND_WHOOSH_ACTIVATE);
+}
+
 void audio_feedback_play(sound_id_t id)
 {
     if (!s_queue || id >= SOUND_COUNT) return;
@@ -189,6 +202,9 @@ esp_err_t audio_feedback_init(void)
         ESP_LOGE(TAG, "falha ao criar task");
         return ESP_ERR_NO_MEM;
     }
+
+    event_bus_subscribe(EVT_TOUCH_PRESS,  on_touch_press);
+    event_bus_subscribe(EVT_WAKE_WORD,    on_wake_word);
 
     ESP_LOGI(TAG, "ok — P%u Core1 sons=%d", TASK_PRIO, SOUND_COUNT);
     return ESP_OK;
