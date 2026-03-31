@@ -53,6 +53,11 @@ typedef struct {
     uint8_t intent;      /* intent_t (ver intent_mapper.h) */
     uint8_t confidence;  /* 0..100                         */
 } intent_event_t;
+
+/* Diálogo — publicado pelo DialogueStateService a cada transição de estado */
+typedef struct {
+    uint8_t state;       /* dialogue_state_t (ver dialogue_state_service.h) */
+} dialogue_state_event_t;
 /* Display */
 #define EVT_DISPLAY_CMD      0x0501
 /* Gaze */

@@ -23,4 +23,6 @@ idf_component_register(
         brownout_handler
         safe_mode
         led_router
+        tts
+        dialogue_state
 )
