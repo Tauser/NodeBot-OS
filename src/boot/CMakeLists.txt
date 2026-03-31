@@ -33,4 +33,5 @@ idf_component_register(
         engagement_service
         camera_service
         camera
+        i2c_bus
 )

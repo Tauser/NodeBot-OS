@@ -41,8 +41,9 @@ esp_err_t camera_bringup_init(void)
         .pin_pwdn         = CAM_PIN_PWDN,
         .pin_reset        = CAM_PIN_RESET,
         .pin_xclk         = CAM_PIN_XCLK,
-        .pin_sccb_sda     = CAM_PIN_SIOD,
-        .pin_sccb_scl     = CAM_PIN_SIOC,
+        .pin_sccb_sda     = -1,            /* ignorado — sccb_i2c_port usado */
+        .pin_sccb_scl     = -1,
+        .sccb_i2c_port    = HAL_I2C_PORT, /* reutiliza I2C_NUM_0 (i2c_bus)  */
         .pin_d7           = CAM_PIN_D7,
         .pin_d6           = CAM_PIN_D6,
         .pin_d5           = CAM_PIN_D5,

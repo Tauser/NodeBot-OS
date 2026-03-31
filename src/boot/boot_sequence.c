@@ -39,6 +39,7 @@
 #include "engagement_service.h"
 #include "camera_service.h"
 #include "camera_bringup.h"
+#include "i2c_bus.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -160,6 +161,9 @@ esp_err_t app_boot(void)
     // PRODUÇÃO: trocar a linha acima por:
     BOOT_STEP_V(5, "face_render", face_engine_start_task());
     BOOT_STEP_V(5, "blink_ctrl", blink_controller_init());
+    /* ── i2c_bus: barramento compartilhado — ANTES de qualquer driver I2C ── */
+    BOOT_STEP(5, "i2c_bus", i2c_bus_init());
+
     /* E08A bring-up câmera: descomentar para validação HW; manter comentado em produção.
      * DEVE ficar antes de imu_service_init (Regra R1: SCCB não pode disputar I2C_NUM_0). */
     // BOOT_STEP(5, "cam_bringup_init",    camera_bringup_init());
@@ -192,8 +196,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "mood_service",     mood_service_init());
     BOOT_STEP  (6, "attention_svc",    attention_service_init());
     BOOT_STEP  (6, "engagement_svc",   engagement_service_init());
-    /* camera_service desativado até E08A HW validado (I2C_NUM_0 compartilhado com IMU) */
-    // BOOT_STEP  (6, "camera_service",   camera_service_init());
+    BOOT_STEP  (6, "camera_service",   camera_service_init());
     BOOT_STEP  (6, "behavior_engine",  behavior_engine_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
