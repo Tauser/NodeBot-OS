@@ -71,25 +71,62 @@ static void load_fallback(sound_id_t id)
     ESP_LOGI(TAG, "som %d: fallback %uHz %ums", (int)id, freq_hz, (unsigned)dur_ms);
 }
 
+/* Tenta também com extensão .wav além de .pcm */
+static const char *k_wav_paths[SOUND_COUNT] = {
+    [SOUND_BEEP_ACK]        = "/sdcard/sounds/beep_ack.wav",
+    [SOUND_DING_NOTIF]      = "/sdcard/sounds/ding_notif.wav",
+    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_act.wav",
+    [SOUND_CLICK_TOUCH]     = "/sdcard/sounds/click_touch.wav",
+    [SOUND_ERROR_TONE]      = "/sdcard/sounds/error_tone.wav",
+};
+
+/* Retorna o offset de dados de um buffer lido do disco.
+ * Se começar com "RIFF", pula o header WAV padrão (44 bytes).
+ * Caso contrário assume PCM cru (offset 0). */
+static size_t wav_data_offset(const uint8_t *raw, size_t len)
+{
+    if (len >= 44 && raw[0] == 'R' && raw[1] == 'I' &&
+                     raw[2] == 'F' && raw[3] == 'F') {
+        /* Localiza o chunk "data" — pode não estar exatamente em byte 36 */
+        for (size_t i = 12; i + 8 <= len; i += 4) {
+            if (raw[i]   == 'd' && raw[i+1] == 'a' &&
+                raw[i+2] == 't' && raw[i+3] == 'a') {
+                return i + 8;   /* pula id(4) + size(4) */
+            }
+        }
+        return 44;  /* fallback: header WAV padrão */
+    }
+    return 0;   /* PCM cru */
+}
+
 static void try_load_from_sd(sound_id_t id)
 {
-    if (!sd_file_exists(k_paths[id])) return;
+    /* Aceita .pcm e .wav */
+    const char *path = NULL;
+    if      (sd_file_exists(k_paths[id]))     path = k_paths[id];
+    else if (sd_file_exists(k_wav_paths[id])) path = k_wav_paths[id];
+    else return;
 
     size_t max_bytes = MAX_SOUND_SAMPLES * sizeof(int16_t);
-    int16_t *buf = heap_caps_malloc(max_bytes, MALLOC_CAP_SPIRAM);
-    if (!buf) return;
+    uint8_t *raw = heap_caps_malloc(max_bytes, MALLOC_CAP_SPIRAM);
+    if (!raw) return;
 
-    size_t bytes = sd_read_file(k_paths[id], buf, max_bytes);
-    if (bytes < sizeof(int16_t)) {
-        heap_caps_free(buf);
-        return;
-    }
+    size_t bytes = sd_read_file(path, raw, max_bytes);
+    if (bytes < 2u) { heap_caps_free(raw); return; }
 
-    /* Substitui o fallback pelo som do SD */
+    size_t offset  = wav_data_offset(raw, bytes);
+    size_t samples = (bytes - offset) / sizeof(int16_t);
+
+    if (samples == 0) { heap_caps_free(raw); return; }
+
+    /* Move dados para o início do buffer (in-place, offset pequeno) */
+    if (offset > 0) memmove(raw, raw + offset, samples * sizeof(int16_t));
+
     if (s_sounds[id].buf) heap_caps_free(s_sounds[id].buf);
-    s_sounds[id].buf     = buf;
-    s_sounds[id].samples = bytes / sizeof(int16_t);
-    ESP_LOGI(TAG, "som %d: SD %u samples", (int)id, (unsigned)s_sounds[id].samples);
+    s_sounds[id].buf     = (int16_t *)raw;
+    s_sounds[id].samples = samples;
+    ESP_LOGI(TAG, "som %d: SD '%s' %u samples (offset=%u)",
+             (int)id, path, (unsigned)samples, (unsigned)offset);
 }
 
 /* ── Task de playback ──────────────────────────────────────────────────── */
