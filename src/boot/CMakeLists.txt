@@ -25,4 +25,6 @@ idf_component_register(
         led_router
         tts
         dialogue_state
+        motion_safety
+        behavior
 )

@@ -30,6 +30,8 @@
 #include "intent_mapper.h"
 #include "tts.h"
 #include "dialogue_state_service.h"
+#include "motion_safety_service.h"
+#include "behavior_engine.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -172,6 +174,8 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "intent_mapper",  intent_mapper_init());
     BOOT_STEP  (6, "tts",            tts_init());
     BOOT_STEP  (6, "dialogue_state", dialogue_state_service_init());
+    BOOT_STEP_V(6, "motion_safety",  motion_safety_init());
+    BOOT_STEP  (6, "behavior_engine", behavior_engine_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());

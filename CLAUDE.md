@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E32 - TTS Pré-gravado e DialogueStateService
-Ultima concluida   : E31 - Comandos Offline Mínimos (keyword spotting + intent mapper)
-Proxima            : E33 - BehaviorEngine — loop behavior tree
+Etapa em andamento : E33 - BehaviorEngine — loop behavior tree
+Ultima concluida   : E32 - TTS Pré-gravado e DialogueStateService
+Proxima            : E34 - GestureService, PersonaService e soak 8h
 Branch git         : main
 ```
 
@@ -217,24 +217,23 @@ Branch git         : main
 - WakeWordService: AFE pipeline (afe_config_init "M") + WakeNet, Core 0 P15, auto-supressão 800ms.
 - Colisão de nome: `vad_process` do esp-sr conflita com o nosso — renomeado para `nb_vad_process`.
 - esp-sr instalado via component manager: `main/idf_component.yml` + `managed_components/espressif__esp-sr`.
-- Wake word detectada → EVT_LED_CMD (vermelho) + EVT_WAKE_WORD + emotion_mapper_apply(SURPRISED).
-- audio_feedback.c já subscreve EVT_WAKE_WORD e toca WHOOSH_ACTIVATE.
-- `wake_word_suppress_ms(ms)` disponível — chamar ao iniciar TTS (E32).
-- KeywordSpotter: MFCC 13 coef (25ms/10ms, FFT-512 esp-dsp) + DTW Sakoe-Chiba. Templates WAV no SD: `/sdcard/kws/{kw_name}_{0..4}.wav` (16kHz mono 16-bit).
-- IntentMapper: PCM listener em audio_capture → captura 3s pós-wake-word → keyword_spotter_match → EVT_INTENT_DETECTED{intent_t, confidence 0-100}. Core 1 P10.
-- audio_capture_set_pcm_listener() disponível para qualquer módulo que precise de áudio raw pós-wake.
-- EVT_INTENT_DETECTED adicionado ao event_bus.h com payload intent_event_t{uint8 intent, uint8 confidence}.
-- 12 intents definidos em intent_mapper.h: INTENT_SLEEP..INTENT_CANCEL + INTENT_UNKNOWN.
+- TTS: frases PCM/WAV em /sdcard/tts/, tts_play_phrase(phrase_id_t) + tts_play_dynamic(TPL_HOUR, hora); publica EVT_TTS_DONE.
+- DialogueStateService: FSM IDLE→LISTENING(3s)→PROCESSING(5s)→SPEAKING→IDLE; EVT_DIALOGUE_STATE_CHANGED a cada transição.
+- dialogue_state_event_t{uint8 state} adicionado ao event_bus.h; led_router cancela LED_STATE_LISTENING via EVT_DIALOGUE_STATE_CHANGED.
+- wake_word_suppress_ms(ms) + vad_suppress_ms(ms) chamados pelo tts_task antes de audio_play_pcm.
+- KeywordSpotter: MFCC 13 coef (25ms/10ms, FFT-512 esp-dsp) + DTW Sakoe-Chiba. Templates WAV no SD: /sdcard/kws/{kw_name}_{0..4}.wav (16kHz mono 16-bit).
+- IntentMapper: EVT_INTENT_DETECTED com payload intent_event_t{uint8 intent, uint8 confidence}. 12 intents.
 - face_engine_register_events() separado de face_engine_start_task() — subscribe só após event_bus_init().
 
-### Criterios de pronto (E31)
-- [x] KeywordSpotter: DTW + MFCC com esp-dsp FFT
-- [x] IntentMapper: captura pós-wake-word + EVT_INTENT_DETECTED
-- [x] 12 intents mapeados
+### Criterios de pronto (E32)
+- [x] tts_play_phrase(13 frases) + tts_play_dynamic(TPL_HOUR)
+- [x] FSM DialogueStateService — 4 estados + 2 timers
+- [x] EVT_TTS_DONE + EVT_DIALOGUE_STATE_CHANGED no EventBus
+- [x] LED vermelho exato ao estado LISTENING
 - [x] Build ok
-- [ ] 12 comandos × 10 tentativas: ≥ 80% acurácia (teste em HW com templates gravados)
-- [ ] INTENT_UNKNOWN para palavras aleatórias
-- [ ] Latência ≤ 500ms após fim da fala
+- [ ] Percorrer todos os estados via HW — confirmar transições
+- [ ] Timeout 4s sem fala → IDLE
+- [ ] "que horas são" → hora falada (requer hora_X.pcm no SD)
 
 ---
 

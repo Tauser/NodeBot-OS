@@ -32,8 +32,13 @@ static portMUX_TYPE      s_mux = portMUX_INITIALIZER_UNLOCKED;
 static volatile bool     s_safe          = true;
 static volatile uint32_t s_last_hb_ms    = 0u;
 
-/* Acumuladores de debounce por servo (contados em ticks de 5 ms) */
+/* Acumuladores de debounce por servo */
 static uint32_t          s_overcurrent_accum_ms[NUM_SERVOS];
+
+/* Período real da task em ticks e ms (calculado no init para evitar
+ * xTaskDelayUntil assert quando pdMS_TO_TICKS(5)=0 com HZ<=200). */
+static TickType_t s_period_ticks;
+static uint32_t   s_actual_period_ms;
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 static inline uint32_t now_ms(void)
@@ -99,7 +104,7 @@ static void safety_task(void *arg)
         for (uint8_t i = 0; i < NUM_SERVOS; i++) {
             int ma = scs0009_get_current_ma(i);
             if (ma > (int)OVERCURRENT_MA) {
-                s_overcurrent_accum_ms[i] += SAFETY_TASK_PERIOD_MS;
+                s_overcurrent_accum_ms[i] += s_actual_period_ms;
                 if (s_overcurrent_accum_ms[i] >= OVERCURRENT_DEBOUNCE_MS) {
                     trigger_blocked(i);
                     /* Reseta acumuladores de todos os servos após bloqueio */
@@ -110,7 +115,7 @@ static void safety_task(void *arg)
             }
         }
 
-        vTaskDelayUntil(&xLastWake, pdMS_TO_TICKS(SAFETY_TASK_PERIOD_MS));
+        vTaskDelayUntil(&xLastWake, s_period_ticks);
     }
 }
 
@@ -121,6 +126,13 @@ void motion_safety_init(void)
     memset(s_overcurrent_accum_ms, 0, sizeof(s_overcurrent_accum_ms));
     s_safe       = true;
     s_last_hb_ms = 0u;
+
+    /* Calcula período real: clamp a mínimo 1 tick (evita assert se HZ<=200) */
+    s_period_ticks     = pdMS_TO_TICKS(SAFETY_TASK_PERIOD_MS);
+    if (s_period_ticks == 0u) s_period_ticks = 1u;
+    s_actual_period_ms = (uint32_t)(s_period_ticks * portTICK_PERIOD_MS);
+    ESP_LOGI(TAG, "period: req=%ums actual=%ums (%u ticks)",
+             SAFETY_TASK_PERIOD_MS, s_actual_period_ms, (unsigned)s_period_ticks);
 
     xTaskCreatePinnedToCore(
         safety_task,
