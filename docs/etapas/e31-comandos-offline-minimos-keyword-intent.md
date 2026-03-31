@@ -1,6 +1,6 @@
 # E31 - Comandos Offline Mínimos — Keyword + Intent
 
-- Status: 🔲 Não iniciada
+- Status: ✅ Implementada — pendente validação em HW
 - Complexidade: Média
 - Grupo: Áudio
 - HW Real: SIM
