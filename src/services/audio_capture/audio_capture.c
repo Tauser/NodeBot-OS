@@ -8,6 +8,7 @@
 #include "freertos/semphr.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
+#include <math.h>
 
 #include <string.h>
 #include <stdint.h>
