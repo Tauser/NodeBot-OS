@@ -24,13 +24,13 @@ static const char *TAG = "imu_svc";
 
 /* SHAKE: variância da magnitude numa janela de 500ms */
 #define SHAKE_WINDOW         10u     /* amostras (10 × 50ms = 500ms)           */
-#define SHAKE_VAR_THRESHOLD  500000L /* mg² — piso em repouso ~100k; shake ~500k+ */
+#define SHAKE_VAR_THRESHOLD  300000L /* mg² — piso em repouso ~100k; shake moderado ~300k+ */
 #define SHAKE_COOLDOWN_MS    2000u
 
 /* TILT */
 #define TILT_THRESHOLD_DEG   40.0f
 #define TILT_CONFIRM_MS      2000u
-#define TILT_COOLDOWN_MS     3000u
+#define TILT_COOLDOWN_MS     10000u
 
 /* UPRIGHT */
 #define UPRIGHT_MAX_DEG      15.0f
@@ -59,9 +59,10 @@ static void imu_service_task(void *arg)
     bool     fall_active     = false;
     bool     fall_fired      = false;
 
-    uint32_t tilt_start      = 0u;
-    bool     tilt_active     = false;
-    uint32_t tilt_cooldown   = 0u;
+    uint32_t tilt_start         = 0u;
+    bool     tilt_active        = false;
+    bool     tilt_needs_upright = false;  /* re-arma só após voltar ao plano */
+    uint32_t tilt_cooldown      = 0u;
     uint32_t shake_cooldown  = 0u;
 
     memset(mag_buf, 0, sizeof(mag_buf));
@@ -138,19 +139,23 @@ static void imu_service_task(void *arg)
         }
 
         if (tilt > TILT_THRESHOLD_DEG) {
-            if (!tilt_active) {
+            if (tilt_needs_upright) {
+                /* aguarda retorno ao plano antes de re-armar */
+            } else if (!tilt_active) {
                 tilt_active = true;
                 tilt_start  = t;
             } else if (tilt_cooldown == 0u &&
                        (t - tilt_start) >= TILT_CONFIRM_MS) {
                 imu_motion_event_t ev = { .value = tilt };
                 event_bus_publish(EVT_IMU_TILT, &ev, sizeof(ev), EVENT_PRIO_BEHAVIOR);
-                tilt_cooldown = TILT_COOLDOWN_MS;
-                tilt_active   = false;
+                tilt_cooldown       = TILT_COOLDOWN_MS;
+                tilt_active         = false;
+                tilt_needs_upright  = true;   /* só re-arma após voltar ao plano */
                 ESP_LOGI(TAG, "TILT — angle=%.1f°", (double)tilt);
             }
         } else {
-            tilt_active = false;
+            tilt_active        = false;
+            tilt_needs_upright = false;   /* voltou ao plano: re-arme liberado */
         }
 
         vTaskDelay(pdMS_TO_TICKS(POLL_MS));
