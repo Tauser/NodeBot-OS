@@ -2,6 +2,7 @@
 #include "event_bus.h"
 #include "hal_init.h"
 #include "esp_camera.h"
+#include "driver/i2c_master.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "esp_log.h"
@@ -76,7 +77,7 @@ static void update_presence(uint8_t diff)
 
     if (new_presence != s_presence) {
         s_presence = new_presence;
-        uint8_t confidence = diff > 255 ? 100 : (uint8_t)((diff * 100) / 255);
+        uint8_t confidence = (uint8_t)((diff * 100u) / 255u);
         presence_event_t ev = { .present = new_presence, .confidence = confidence };
         event_bus_publish(EVT_PRESENCE_DETECTED, &ev, sizeof(ev), EVENT_PRIO_BEHAVIOR);
         ESP_LOGI(TAG, "presença: %s (diff=%u conf=%u%%)",
