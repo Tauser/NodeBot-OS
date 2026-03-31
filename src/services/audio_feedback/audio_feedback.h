@@ -19,7 +19,7 @@ typedef enum {
 /*
  * Inicializa o AudioFeedbackService.
  *
- * Tenta carregar sons do SD (/sdcard/sounds/*.pcm) para PSRAM.
+ * Tenta carregar sons do SD (/sdcard/sounds/NOME.pcm) para PSRAM.
  * Sons ausentes ou SD offline: usa beep gerado em software como fallback.
  * Cria AudioPlaybackTask (Core 1, P18).
  *
