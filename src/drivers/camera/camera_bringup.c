@@ -1,6 +1,7 @@
 #include "camera_bringup.h"
 #include "hal_init.h"
 #include "esp_camera.h"
+#include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
