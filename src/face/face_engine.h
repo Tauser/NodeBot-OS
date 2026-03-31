@@ -53,6 +53,13 @@ void face_engine_set_blink(float amount);
  */
 void face_engine_set_blink_pair(float left, float right);
 
+/*
+ * Ativa/desativa indicador de escuta (mic piscando no canto da tela).
+ * Quando active=true, desenha um ícone de mic piscando a 2 Hz no canto
+ * inferior-direito até ser desativado.
+ */
+void face_engine_set_listening(bool active);
+
 #ifdef __cplusplus
 }
 #endif

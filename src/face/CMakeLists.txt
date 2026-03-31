@@ -5,6 +5,6 @@ idf_component_register(
                    "blink_controller.cpp"
                    "emotion_mapper.c"
     INCLUDE_DIRS   "."
-    REQUIRES       display LovyanGFX freertos models event_bus
+    REQUIRES       display LovyanGFX freertos models event_bus esp_timer
     PRIV_REQUIRES  esp_timer watchdog_manager
 )

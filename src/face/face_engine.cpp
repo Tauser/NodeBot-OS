@@ -1,5 +1,6 @@
 #include "face_engine.hpp"
 #include "display.h"
+#include "event_bus.h"
 
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -10,6 +11,19 @@
 #include <cmath>     /* sinf      */
 
 static const char *TAG = "FACE";
+
+/* ── Estado de escuta (mic indicator) ───────────────────────────────────── */
+static volatile bool     s_listening      = false;
+static esp_timer_handle_t s_listen_timer  = NULL;
+
+static void on_listen_timeout(void *) { s_listening = false; }
+
+static void on_wake_word_face(uint16_t, void *)
+{
+    s_listening = true;
+    esp_timer_stop(s_listen_timer);
+    esp_timer_start_once(s_listen_timer, 5000ULL * 1000ULL);
+}
 
 /* ── Helpers de interpolação ─────────────────────────────────────────────── */
 
@@ -330,6 +344,17 @@ void FaceEngine::renderLoop(void)
         const int runtime_dy = (int)roundf((float)gaze_px_y + drift_y + _micro_y);
         drawFrame(cur, runtime_dx, runtime_dy);
 
+        /* 5b. Indicador de escuta: mic piscando a 2 Hz no canto inferior-direito */
+        if (s_listening) {
+            /* Pisca a 2 Hz: ON nos 250ms pares, OFF nos 250ms ímpares */
+            bool mic_on = ((now_ms / 250u) & 1u) == 0u;
+            if (mic_on) {
+                /* Círculo vermelho pequeno + ponto branco central */
+                _drawBuf->fillCircle(FB_W - 12, FB_H - 12, 7, 0xF800u); /* vermelho */
+                _drawBuf->fillCircle(FB_W - 12, FB_H - 12, 2, 0xFFFFu); /* branco   */
+            }
+        }
+
         /* 6. Empurra para o display físico usando o buffer recém-renderizado */
         display_push_sprite(_drawBuf, 0, 0);
 
@@ -402,6 +427,10 @@ extern "C" void face_engine_init(void)
 extern "C" void face_engine_start_task(void)
 {
     FaceEngine::instance().startTask();
+
+    const esp_timer_create_args_t t = { .callback = on_listen_timeout, .name = "face_listen" };
+    esp_timer_create(&t, &s_listen_timer);
+    event_bus_subscribe(EVT_WAKE_WORD, on_wake_word_face);
 }
 
 extern "C" void face_engine_apply_params(const face_params_t *p)
@@ -427,4 +456,9 @@ extern "C" void face_engine_set_blink(float amount)
 extern "C" void face_engine_set_blink_pair(float left, float right)
 {
     FaceEngine::instance().setBlinkPair(left, right);
+}
+
+extern "C" void face_engine_set_listening(bool active)
+{
+    s_listening = active;
 }
