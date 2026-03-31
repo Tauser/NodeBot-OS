@@ -58,7 +58,13 @@ static esp_err_t imu_write(uint8_t reg, uint8_t val)
 
 static esp_err_t imu_read(uint8_t reg, uint8_t *data, size_t len)
 {
-    return i2c_master_transmit_receive(s_dev, &reg, 1, data, len, I2C_TIMEOUT_MS);
+    /* 3 tentativas — barramento compartilhado com OV2640 causa falhas esporádicas */
+    for (int attempt = 0; attempt < 3; attempt++) {
+        esp_err_t ret = i2c_master_transmit_receive(s_dev, &reg, 1, data, len, I2C_TIMEOUT_MS);
+        if (ret == ESP_OK) return ESP_OK;
+        if (attempt < 2) vTaskDelay(pdMS_TO_TICKS(2));
+    }
+    return ESP_ERR_TIMEOUT;
 }
 
 static esp_err_t imu_read_u8(uint8_t reg, uint8_t *val)
