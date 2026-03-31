@@ -428,8 +428,16 @@ extern "C" void face_engine_start_task(void)
 {
     FaceEngine::instance().startTask();
 
-    const esp_timer_create_args_t t = { .callback = on_listen_timeout, .name = "face_listen" };
+    /* Timer criado aqui (não precisa de event_bus) */
+    const esp_timer_create_args_t t = { .callback = on_listen_timeout, .arg = NULL,
+                                        .dispatch_method = ESP_TIMER_TASK,
+                                        .name = "face_listen", .skip_unhandled_events = false };
     esp_timer_create(&t, &s_listen_timer);
+}
+
+extern "C" void face_engine_register_events(void)
+{
+    /* Chamado após event_bus_init() no STEP 6 */
     event_bus_subscribe(EVT_WAKE_WORD, on_wake_word_face);
 }
 

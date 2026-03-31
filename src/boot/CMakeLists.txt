@@ -12,6 +12,7 @@ idf_component_register(
         audio_capture
         audio_feedback
         wake_word
+        intent_mapper
         display
         face
         touch_service

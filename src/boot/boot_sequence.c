@@ -27,6 +27,7 @@
 #include "brownout_handler.h"
 #include "safe_mode_service.h"
 #include "led_router.h"
+#include "intent_mapper.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -156,6 +157,7 @@ esp_err_t app_boot(void)
     /* ── STEP 6: EventBus ────────────────────────────────────────────── */
     BOOT_STEP(6, "event_bus", event_bus_init());
 
+    BOOT_STEP_V(6, "face_events",   face_engine_register_events());
     BOOT_STEP_V(6, "gaze_service",  gaze_service_init());
     BOOT_STEP_V(6, "state_vector",  state_vector_init());
     BOOT_STEP_V(6, "idle_behavior", idle_behavior_init());
@@ -165,6 +167,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "audio_capture",  audio_capture_init());
     BOOT_STEP  (6, "audio_feedback", audio_feedback_init());
     BOOT_STEP  (6, "wake_word",      wake_word_init());
+    BOOT_STEP  (6, "intent_mapper",  intent_mapper_init());
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());

@@ -34,6 +34,7 @@ extern "C" {
 #define EVT_AUDIO_KEYWORD    0x0302
 #define EVT_VOICE_ACTIVITY   0x0303   /* payload: uint8_t active (1=on/0=off) */
 #define EVT_WAKE_WORD        0x0304   /* sem payload                          */
+#define EVT_INTENT_DETECTED  0x0305   /* payload: intent_event_t              */
 /* LED */
 #define EVT_LED_CMD          0x0401   /* payload: led_cmd_t                  */
 
@@ -44,6 +45,12 @@ typedef struct {
     uint8_t idx;
 } led_cmd_t;
 #define LED_CMD_EMOTION  0xFF   /* idx magic: set emotion color */
+
+/* Intent — publicado pelo IntentMapper após reconhecimento de comando */
+typedef struct {
+    uint8_t intent;      /* intent_t (ver intent_mapper.h) */
+    uint8_t confidence;  /* 0..100                         */
+} intent_event_t;
 /* Display */
 #define EVT_DISPLAY_CMD      0x0501
 /* Gaze */

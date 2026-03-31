@@ -36,7 +36,7 @@ typedef struct {
     face_priority_t priority;
 } face_params_t;
 
-#define FACE_EYE_COLOR      0x04B6u  /* teal RGB(0,148,180) — era 0x07FF (ciano puro=branco) */
+#define FACE_EYE_COLOR      0xFFFFu /*0x04B6u   teal RGB(0,148,180) — era 0x07FF (ciano puro=branco) */
 #define FACE_BG_COLOR       0x0000u
 #define FACE_BLUE_ACCENT    0x441A
 #define FACE_YELLOW_ACCENT  0xFEA0
@@ -120,8 +120,8 @@ typedef struct {
               0.0f,0.0f, 0.55f,0.55f, 350, FACE_PRIORITY_IDLE)
 
 #define FACE_ANGRY \
-    FACE_EXPR(10,24,0,0, 24,10,0,0, 0.38f,0.38f, 0,0, 96, 8,10, 0,0, FACE_RED_ACCENT, \
-              0.0f,0.0f, 0.70f,0.70f, 260, FACE_PRIORITY_REACTION)
+    FACE_EXPR( 0,24,0,0,  24,0,0,0, 0.80f,0.80f,  0,0,  98,  9,4,  0,-5,  FACE_RED_ACCENT, \
+    0.00f,0.00f,  0.80f,0.80f,  250,  FACE_PRIORITY_REACTION )
 
 #define FACE_FURIOUS \
     FACE_EXPR(-8,28,-24,-20, 28,-2,-20,-24, 0.28f,0.28f, 0,0, 94, 6,6, 8,-14, FACE_RED_ACCENT, \

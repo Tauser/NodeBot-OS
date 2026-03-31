@@ -30,6 +30,14 @@ esp_err_t audio_capture_init(void);
  */
 size_t audio_capture_read(int16_t *buf, size_t samples);
 
+/*
+ * Registra callback invocado a cada bloco de PCM capturado pelo I2S.
+ * NULL remove o listener. Ponteiro volatile — seguro cross-core.
+ * O callback é chamado no contexto do audio_capture_task (Core 0):
+ * deve ser rápido — sem bloqueio, sem logging, sem malloc.
+ */
+void audio_capture_set_pcm_listener(void (*cb)(const int16_t *pcm, size_t len));
+
 #ifdef __cplusplus
 }
 #endif

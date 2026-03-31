@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include "face_params.h"   /* face_params_t — definida em src/models */
 
 /*
@@ -59,6 +60,12 @@ void face_engine_set_blink_pair(float left, float right);
  * inferior-direito até ser desativado.
  */
 void face_engine_set_listening(bool active);
+
+/*
+ * Registra subscribers de evento no EventBus.
+ * Deve ser chamado APÓS event_bus_init().
+ */
+void face_engine_register_events(void);
 
 #ifdef __cplusplus
 }

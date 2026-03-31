@@ -35,7 +35,6 @@ static void on_wake_word(uint16_t type, void *payload)
 {
     (void)type; (void)payload;
     ws2812_set_state(LED_STATE_LISTENING);
-    /* Reinicia o timer: 5s sem novo wake word → volta ao estado normal */
     esp_timer_stop(s_listen_timer);
     esp_timer_start_once(s_listen_timer, LISTENING_TIMEOUT_MS * 1000ULL);
 }
@@ -43,13 +42,17 @@ static void on_wake_word(uint16_t type, void *payload)
 esp_err_t led_router_init(void)
 {
     const esp_timer_create_args_t t = {
-        .callback = on_listen_timeout,
-        .name     = "led_listen",
+        .callback             = on_listen_timeout,
+        .arg                  = NULL,
+        .dispatch_method      = ESP_TIMER_TASK,
+        .name                 = "led_listen",
+        .skip_unhandled_events = false,
     };
-    esp_timer_create(&t, &s_listen_timer);
+    esp_err_t err = esp_timer_create(&t, &s_listen_timer);
+    if (err != ESP_OK) return err;
 
-    esp_err_t err = event_bus_subscribe(EVT_LED_CMD,   on_led_cmd);
-    err |=          event_bus_subscribe(EVT_WAKE_WORD, on_wake_word);
+    err  = event_bus_subscribe(EVT_LED_CMD,   on_led_cmd);
+    err |= event_bus_subscribe(EVT_WAKE_WORD, on_wake_word);
     if (err == ESP_OK) ESP_LOGI(TAG, "OK");
     return err;
 }

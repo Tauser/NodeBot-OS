@@ -15,6 +15,9 @@
 
 static const char *TAG = "audio_cap";
 
+/* PCM listener para keyword_spotter — chamado a cada bloco capturado */
+static volatile void (*s_pcm_listener)(const int16_t*, size_t) = NULL;
+
 #define TASK_STACK       4096u
 #define TASK_PRIO          14u
 
@@ -107,12 +110,21 @@ static void audio_capture_task(void *arg)
                block, total * sizeof(int16_t));
         s_write_idx = (w + 1u) % AUDIO_CAPTURE_RING_BLOCKS;
 
-        /* Sinaliza consumidores */
+        /* Sinaliza consumidores do ring buffer */
         xSemaphoreGive(s_data_sem);
+
+        /* Notifica listener de PCM bruto (keyword_spotter) se registrado */
+        void (*listener)(const int16_t*, size_t) = s_pcm_listener;
+        if (listener) listener(block, total);
     }
 }
 
 /* ── API pública ───────────────────────────────────────────────────────── */
+
+void audio_capture_set_pcm_listener(void (*cb)(const int16_t *pcm, size_t len))
+{
+    s_pcm_listener = cb;
+}
 
 size_t audio_capture_read(int16_t *buf, size_t samples)
 {
