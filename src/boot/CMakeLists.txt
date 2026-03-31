@@ -9,6 +9,7 @@ idf_component_register(
         event_bus
         sd
         imu_service
+        audio_capture
         display
         face
         touch_service
