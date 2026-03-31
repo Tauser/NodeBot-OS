@@ -47,9 +47,24 @@
 ```
 Total: **60 arquivos**.
 
+### ⚠️ Use sua própria voz para os templates
+
+**Não use TTS (ElevenLabs, Google, etc.) para os templates de keyword.**
+
+O DTW compara a sua voz falando o comando contra os templates gravados.
+Se os templates foram gerados por voz sintética e você fala com voz natural,
+as características acústicas são diferentes e a acurácia cai bastante.
+
+| Fonte dos templates | Acurácia esperada |
+|---------------------|-------------------|
+| Sua voz (recomendado) | ⭐⭐⭐⭐⭐ |
+| TTS + sua voz | ⭐⭐ |
+
+As frases são muito curtas ("sim", "não", "dorme") — gravar 60 arquivos leva ~15 minutos.
+
 ### Como gravar (opção A — PC com Audacity)
-1. Abrir Audacity → Project Rate = 16000 Hz.
-2. Gravar cada fala (~1–2s de silêncio antes e depois).
+1. Abrir Audacity → Project Rate = **16000 Hz** (canto inferior esquerdo).
+2. Gravar cada fala (~0.5–1s por comando, sem silêncio longo nas pontas).
 3. Exportar: **File → Export → Export as WAV → PCM 16-bit Signed**.
 4. Salvar com o nome exato (ex: `dorme_0.wav`).
 5. Repetir 5 vezes por keyword (falar naturalmente, não roboticamente).
@@ -155,21 +170,63 @@ Arquivo: `src/services/keyword_spotter/keyword_spotter.c`
 
 ## Próxima etapa: E32 — TTS Pré-gravado + DialogueStateService
 
-Após E31 validada, implementar:
+### Arquivos de resposta (E32)
 
-1. **Arquivos de resposta no SD** — um WAV por intent:
+Para E32 você pode usar **TTS sintético (ElevenLabs)** — sem problema, pois o robô
+apenas *reproduz* as respostas, não precisa reconhecê-las.
+
+**Plano gratuito ElevenLabs:** 10.000 chars/mês — suficiente para todos os 41 arquivos.
+
+**Fluxo:**
+1. Gerar cada frase em elevenlabs.io (escolha uma voz em PT-BR)
+2. Baixar como MP3
+3. Converter para WAV 16kHz mono 16-bit:
+   ```bash
+   ffmpeg -i arquivo.mp3 -ar 16000 -ac 1 -sample_fmt s16 arquivo.wav
    ```
-   /sdcard/tts/resp_sleep.wav
-   /sdcard/tts/resp_wake.wav
-   ...
+   Ou converter todos de uma vez:
+   ```bash
+   for f in *.mp3; do
+     ffmpeg -i "$f" -ar 16000 -ac 1 -sample_fmt s16 "${f%.mp3}.wav"
+   done
    ```
 
-2. **DialogueStateService** — FSM com 5 estados:
-   ```
-   IDLE → LISTENING → PROCESSING → SPEAKING → IDLE
-   ```
-   - Timeouts em todos os estados (LISTENING: 5s, PROCESSING: 2s, SPEAKING: duração do áudio)
-   - Chamar `wake_word_suppress_ms(duracao_ms)` ao entrar em SPEAKING
-   - Publicar `EVT_FACE_COMMAND` para face reagir em cada transição
+**41 arquivos necessários** em `/sdcard/tts/`:
 
-3. **Integração com EVT_INTENT_DETECTED** — DialogueStateService subscreve e despacha resposta.
+| Arquivo | Frase sugerida |
+|---------|---------------|
+| `ok_sleeping.wav` | "Tá bom, vou dormir" |
+| `ok_awake.wav` | "Olá! Estou acordado" |
+| `ok_silence.wav` | "Ok, fico quieto" |
+| `ok_privacy.wav` | "Modo privado ativado" |
+| `im_fine.wav` | "Estou bem, obrigado" |
+| `looking.wav` | "Aqui estou" |
+| `vol_up.wav` | "Volume aumentado" |
+| `vol_down.wav` | "Volume reduzido" |
+| `yes_ack.wav` | "Sim" |
+| `no_ack.wav` | "Não" |
+| `cancelled.wav` | "Cancelado" |
+| `not_understood.wav` | "Não entendi, pode repetir?" |
+| `timeout.wav` | "Não ouvi nada" |
+| `hello.wav` | "Olá!" |
+| `bye.wav` | "Até logo" |
+| `ready.wav` | "Pronto" |
+| `hora_0.wav` … `hora_23.wav` | "São zero horas" … "São vinte e três horas" |
+
+> Os 24 arquivos de hora são opcionais — se ausentes, "que horas são" toca `not_understood.wav`.
+
+### Resumo: qual voz usar para cada coisa
+
+| O quê | Fonte recomendada | Motivo |
+|-------|-------------------|--------|
+| Templates E31 (comandos) | **Sua voz** | Reconhecimento requer a mesma voz |
+| Respostas E32 (TTS) | **ElevenLabs** | Só reprodução, qualquer voz funciona |
+
+### DialogueStateService — FSM
+
+```
+IDLE → LISTENING → PROCESSING → SPEAKING → IDLE
+```
+- Timeouts: LISTENING 5s, PROCESSING 2s
+- Chamar `wake_word_suppress_ms()` ao entrar em SPEAKING
+- Publicar `EVT_DIALOGUE_STATE_CHANGED` em cada transição
