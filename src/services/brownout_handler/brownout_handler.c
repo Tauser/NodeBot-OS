@@ -20,10 +20,10 @@ static void brownout_handler_fn(void)
     nvs_handle_t h;
     if (nvs_open(SAFETY_NS, NVS_READWRITE, &h) != ESP_OK) return;
 
-    uint8_t count = 0;
-    nvs_get_u8(h, "crash_count", &count);
-    if (count < 255) count++;
-    nvs_set_u8(h, "crash_count", count);
+    uint32_t count = 0;
+    nvs_get_u32(h, "crash_count", &count);
+    if (count < 0xFFFFFFFFu) count++;
+    nvs_set_u32(h, "crash_count", count);
     nvs_set_u8(h, "unclean", 1);
     nvs_commit(h);
     nvs_close(h);
