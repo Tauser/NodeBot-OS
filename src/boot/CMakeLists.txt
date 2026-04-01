@@ -37,5 +37,6 @@ idf_component_register(
         wifi_manager
         cloud_bridge
         diagnostics
+        ota_manager
         freertos
 )

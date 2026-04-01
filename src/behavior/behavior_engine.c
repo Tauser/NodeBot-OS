@@ -7,6 +7,7 @@
 #include "safe_mode_service.h"
 #include "event_bus.h"
 #include "camera_service.h"
+#include "ota_manager.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -122,6 +123,7 @@ static void behavior_loop_task(void *arg)
 
         /* ── 1. Heartbeat (SEMPRE PRIMEIRO) ─────────────────────────── */
         motion_safety_feed_heartbeat();
+        ota_manager_send_heartbeat();   /* no-op se nenhum firmware pendente */
 
         /* ── 2. StateVector decay ────────────────────────────────────── */
         state_vector_tick(TICK_MS);

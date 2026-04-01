@@ -45,7 +45,13 @@ CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1=n
 # Suprime warning da API legada de touch (driver/touch_pad.h)
 CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN=y
 
-# mbedTLS — reduz uso de SRAM interna para TLS (HTTPS/CloudBridge)
+# mbedTLS — reduz uso de SRAM interna para TLS (HTTPS/CloudBridge/OTA)
 CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
 CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN=4096
 CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=4096
+
+# OTA — rollback automático (E39)
+# Novo firmware tem 60 s para chamar ota_manager_mark_stable() ou é revertido.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+# Anti-rollback desabilitado (não queima efuse de versão mínima)
+# CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK is not set

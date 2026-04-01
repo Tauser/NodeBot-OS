@@ -6,6 +6,6 @@ idf_component_register(
                  "behavior_engine.c"
                  "persona_service.c"
     INCLUDE_DIRS "."
-    REQUIRES     models face gaze_service event_bus motion_safety dialogue_state safe_mode camera_service
+    REQUIRES     models face gaze_service event_bus motion_safety dialogue_state safe_mode camera_service ota_manager
     PRIV_REQUIRES nvs_flash esp_timer freertos sd json
 )
