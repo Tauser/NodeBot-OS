@@ -41,7 +41,11 @@
  * UART0 (console) preservada em GPIO43/44.
  * ────────────────────────────────────────────────────────────── */
 #define HAL_UART1_TX        20
-#define HAL_UART1_RX        46   /* strapping no boot, RX normal após boot — ver R6 */
+#define HAL_UART1_RX        46   /* strapping no boot, RX normal após boot — ver R6
+                                  * ⚠ HW: adicionar pull-up 4,7 kΩ em GPIO46
+                                  *   GPIO46 tem pull-down interno durante reset;
+                                  *   sem pull-up externo o barramento TTL fica LOW
+                                  *   (idle UART = HIGH) até scs0009_init() ser chamado. */
 #define HAL_UART1_PORT      UART_NUM_1
 #define HAL_UART1_BAUD      1000000 /* SCS0009 padrão: 1 Mbps */
 
@@ -150,7 +154,7 @@
  *    43 │ —                       │ UART0 TX (console)  │ reservado R3
  *    44 │ —                       │ UART0 RX (console)  │ reservado R3
  *    45 │ HAL_ST7789_DC           │ ST7789 D/C          │ ⚠ strapping — ok pós-boot
- *    46 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ strapping boot — ver R6
+ *    46 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ strapping + pull-up 4k7 externo
  *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
  * ─────┴─────────────────────────┴─────────────────────┴────────────────────
  *  Livres  : nenhum — todos os GPIOs disponíveis estão em uso
