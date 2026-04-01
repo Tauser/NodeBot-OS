@@ -4,6 +4,7 @@ idf_component_register(
                   "../drivers/audio"
     PRIV_REQUIRES
         platform
+        servo
         config_manager
         log_manager
         event_bus

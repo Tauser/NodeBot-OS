@@ -50,6 +50,7 @@
 #include "jig_service.h"
 #include "presence_detector.h"
 #include "face_tracker.h"
+#include "scs0009_driver.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -173,6 +174,7 @@ esp_err_t app_boot(void)
     // PRODUÇÃO: trocar a linha acima por:
     BOOT_STEP_V(5, "face_render", face_engine_start_task());
     BOOT_STEP_V(5, "blink_ctrl", blink_controller_init());
+    BOOT_STEP  (5, "scs0009",    scs0009_init());
     /* ── i2c_bus: barramento compartilhado — ANTES de qualquer driver I2C ── */
     BOOT_STEP(5, "i2c_bus", i2c_bus_init());
 
