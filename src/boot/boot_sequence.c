@@ -40,9 +40,15 @@
 #include "camera_service.h"
 #include "camera_bringup.h"
 #include "i2c_bus.h"
+#include "wifi_manager.h"
+#include "cloud_bridge.h"
+#include "snapshot_service.h"
+#include "diagnostic_mode.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -198,6 +204,14 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "engagement_svc",   engagement_service_init());
     BOOT_STEP  (6, "camera_service",   camera_service_init());
     BOOT_STEP  (6, "behavior_engine",  behavior_engine_init());
+    //wifi_manager_set_credentials("CRIARE_2G", "17122484");
+    BOOT_STEP  (6, "wifi_manager",     wifi_manager_init());
+    BOOT_STEP  (6, "cloud_bridge",     cloud_bridge_init());
+    BOOT_STEP  (6, "snapshot_svc",     snapshot_service_init());
+    BOOT_STEP  (6, "diagnostic_mode",  diagnostic_mode_init());
+    //wifi_manager_set_credentials("CRIARE_2G", "17122484");  /* provisionamento — use uma vez */
+    //cloud_bridge_set_api_key("...");                         /* provisionamento — use uma vez */
+
 
     /* ── STEP 7: PowerManager ────────────────────────────────────────── */
     BOOT_STEP(7, "power_manager", power_manager_init());

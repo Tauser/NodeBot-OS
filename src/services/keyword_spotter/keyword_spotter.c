@@ -29,7 +29,7 @@ static const char *TAG = "kws";
 #define KWS_N_TPL_PER_KW           5
 #define KWS_MAX_TEMPLATES        (KWS_KEYWORDS * KWS_N_TPL_PER_KW)  /* 60  */
 #define KWS_DTW_BAND              20   /* largura da banda Sakoe-Chiba       */
-#define KWS_MATCH_THRESHOLD      3.5f  /* DTW normalizado — acima = no match */
+#define KWS_MATCH_THRESHOLD      5.0f  /* DTW normalizado — acima = no match */
 #define KWS_MIN_MATCH_FRAMES       5   /* query muito curta → no match       */
 
 /* ── Nomes das keywords (índice = keyword_id) ──────────────────────────── */
@@ -40,7 +40,7 @@ static const char * const s_kw_names[KWS_KEYWORDS] = {
     "privado",    /* 3  */
     "que_horas",  /* 4  */
     "como_voce",  /* 5  */
-    "me_olha",    /* 6  */
+    "olhe_para_mim",    /* 6  */
     "vol_alto",   /* 7  */
     "vol_baixo",  /* 8  */
     "sim",        /* 9  */

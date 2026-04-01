@@ -6,6 +6,7 @@ set(EXTRA_COMPONENT_DIRS
     src/core
     src/drivers
     src/services
+    src/diagnostics
 )
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)

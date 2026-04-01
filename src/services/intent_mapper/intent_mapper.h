@@ -15,7 +15,7 @@ typedef enum {
     INTENT_PRIVACY_MODE,     /* "modo privado"    */
     INTENT_WHAT_TIME,        /* "que horas são"   */
     INTENT_HOW_ARE_YOU,      /* "como você está"  */
-    INTENT_LOOK_AT_ME,       /* "me olha"         */
+    INTENT_LOOK_AT_ME,       /* "olhe para mim"         */
     INTENT_VOLUME_UP,        /* "volume alto"     */
     INTENT_VOLUME_DOWN,      /* "volume baixo"    */
     INTENT_YES,              /* "sim"             */

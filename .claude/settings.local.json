@@ -9,7 +9,22 @@
       "Bash(cmd.exe /c \"cd /d D:\\\\\\\\Projetos\\\\\\\\NodeBot && idf.py build 2>&1\")",
       "Bash(xargs grep:*)",
       "Bash(cmd /c \"C:/Users/Tauser/.espressif/python_env/idf5.5_py3.11_env/Scripts/python.exe %IDF_PATH%/tools/idf.py build 2>&1\")",
-      "Bash(powershell -Command \"& { . ''''C:/Users/Tauser/.espressif/idf_cmd_init.ps1'''' 2>$null; idf.py build 2>&1 | Select-Object -Last 60 }\")"
+      "Bash(powershell -Command \"& { . ''''C:/Users/Tauser/.espressif/idf_cmd_init.ps1'''' 2>$null; idf.py build 2>&1 | Select-Object -Last 60 }\")",
+      "Bash(find D:/Projetos/NodeBot/src -name imu* -o -name mpu* -o -name icm*)",
+      "Bash(cmd.exe /c \"dir D:\\\\Projetos\\\\NodeBot\\\\managed_components\\\\espressif__esp-sr\\\\CMakeLists.txt\")",
+      "Bash(cmd.exe /c \"dir D:\\\\Projetos\\\\NodeBot\\\\managed_components\\\\espressif__esp-sr\\\\\")",
+      "Bash(cmd.exe /c \"dir D:\\\\\\\\Projetos\\\\\\\\NodeBot\\\\\\\\managed_components\\\\\\\\espressif__esp-sr\")",
+      "Bash(cmd.exe /c \"dir D:\\\\\\\\Projetos\\\\\\\\NodeBot\\\\\\\\managed_components\")",
+      "Bash(git -C D:/Projetos/NodeBot submodule status)",
+      "Bash(git -C D:/Projetos/NodeBot ls-files --others --exclude-standard managed_components/)",
+      "Bash(grep -v \"^#\\\\|^$\" D:/Projetos/NodeBot/sdkconfig)",
+      "Bash(ls D:/Projetos/NodeBot/build/*.bin)",
+      "Bash(xargs cat:*)",
+      "Skill(gsd:progress)",
+      "Bash(find D:/Projetos/NodeBot/main -name *.c -o -name CMakeLists.txt)",
+      "Bash(grep -n \"scs0009\\\\|servo_move\\\\|set_pos\" D:/Projetos/NodeBot/src -r --include=*.h)",
+      "Bash(find D:/Projetos/NodeBot/src -name camera_service* -o -name cloud*)",
+      "Bash(xargs ls:*)"
     ]
   }
 }

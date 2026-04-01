@@ -207,9 +207,9 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E33 - BehaviorEngine — loop behavior tree
-Ultima concluida   : E32 - TTS Pré-gravado e DialogueStateService
-Proxima            : E34 - GestureService, PersonaService e soak 8h
+Etapa em andamento : E34 - GestureService, PersonaService e soak 8h
+Ultima concluida   : E33 - BehaviorEngine — loop behavior tree
+Proxima            : E35 - Memoria, Mood, Atencao, Engajamento
 Branch git         : main
 ```
 
@@ -224,16 +224,16 @@ Branch git         : main
 - KeywordSpotter: MFCC 13 coef (25ms/10ms, FFT-512 esp-dsp) + DTW Sakoe-Chiba. Templates WAV no SD: /sdcard/kws/{kw_name}_{0..4}.wav (16kHz mono 16-bit).
 - IntentMapper: EVT_INTENT_DETECTED com payload intent_event_t{uint8 intent, uint8 confidence}. 12 intents.
 - face_engine_register_events() separado de face_engine_start_task() — subscribe só após event_bus_init().
+- BehaviorEngine: BehaviorLoopTask Core 1 P12 100ms; ordem: heartbeat→state_vector_tick→eventos→BT→publish.
+- StateVector 7 dimensões (energy, valence, arousal, social, attn, comfort, affinity) em PSRAM.
+- FSM: SLEEP→IDLE→ENGAGED→TALKING→SAFE_MODE.
 
-### Criterios de pronto (E32)
-- [x] tts_play_phrase(13 frases) + tts_play_dynamic(TPL_HOUR)
-- [x] FSM DialogueStateService — 4 estados + 2 timers
-- [x] EVT_TTS_DONE + EVT_DIALOGUE_STATE_CHANGED no EventBus
-- [x] LED vermelho exato ao estado LISTENING
+### Criterios de pronto (E33)
+- [x] BehaviorLoop alimenta heartbeat MotionSafety a cada tick
+- [x] StateVector com decay de 100ms
+- [x] FSM percorrendo estados via HW (log: FSM 1→4)
+- [x] Soak 4h sem crashes
 - [x] Build ok
-- [ ] Percorrer todos os estados via HW — confirmar transições
-- [ ] Timeout 4s sem fala → IDLE
-- [ ] "que horas são" → hora falada (requer hora_X.pcm no SD)
 
 ---
 

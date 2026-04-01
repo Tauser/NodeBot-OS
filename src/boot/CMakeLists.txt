@@ -34,4 +34,8 @@ idf_component_register(
         camera_service
         camera
         i2c_bus
+        wifi_manager
+        cloud_bridge
+        diagnostics
+        freertos
 )
