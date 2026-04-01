@@ -47,6 +47,7 @@
 #include "telemetry_service.h"
 #include "ota_manager.h"
 #include "factory_reset.h"
+#include "jig_service.h"
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -215,6 +216,7 @@ esp_err_t app_boot(void)
     BOOT_STEP  (6, "telemetry_svc",    telemetry_service_init());
     BOOT_STEP  (6, "ota_manager",      ota_manager_init());
     BOOT_STEP  (6, "factory_reset",    factory_reset_init());
+    BOOT_STEP  (6, "jig_service",      jig_service_init());
     //wifi_manager_set_credentials("CRIARE_2G", "17122484");  /* provisionamento — use uma vez */
     //cloud_bridge_set_api_key("...");                         /* provisionamento — use uma vez */
 

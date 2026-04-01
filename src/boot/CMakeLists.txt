@@ -39,5 +39,6 @@ idf_component_register(
         diagnostics
         ota_manager
         factory_reset
+        jig
         freertos
 )
