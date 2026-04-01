@@ -40,6 +40,7 @@ idf_component_register(
         ota_manager
         factory_reset
         presence_detector
+        face_tracker
         jig
         freertos
 )

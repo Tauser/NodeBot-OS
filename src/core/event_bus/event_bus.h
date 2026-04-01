@@ -69,6 +69,8 @@ typedef struct {
 #define EVT_PRESENCE_DETECTED  0x0A02 /* payload: presence_event_t            */
 /* Presença (E42) */
 #define EVT_FACE_DETECTED      0x0A03 /* payload: face_detection_result_t     */
+/* Face Tracker (E43) */
+#define EVT_FACE_TRACKER_UPDATE 0x0A04 /* payload: face_tracker_event_t       */
 /* Personagem (E35) */
 #define EVT_MOOD_CHANGED     0x0901   /* payload: mood_event_t { float valence, arousal } */
 #define EVT_LOW_ENGAGEMENT   0x0902   /* sem payload — inatividade > 10 min  */
