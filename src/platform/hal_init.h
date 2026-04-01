@@ -7,16 +7,12 @@
  * REGRAS OBRIGATÓRIAS:
  *   R1. Chamar i2c_master_init() ANTES de esp_camera_init()
  *   R2. Não acessar barramento I2C durante captura de frame (camera)
- *   R3. GPIO43/44 são UART0 TX/RX por padrão.
- *       Ativar USB CDC para liberar o par para UART1:
- *         CONFIG_ESP_CONSOLE_USB_CDC=y  (sdkconfig.defaults)
- *   R4. GPIO45 é strapping — se usado no futuro, adicionar pull-down 10 kΩ
+ *   R3. GPIO43 = UART0_TX, GPIO44 = UART0_RX — reservados para console serial.
+ *       UART1 dos servos usa GPIO20 (TX) e GPIO46 (RX) — sem conflito.
+ *   R4. GPIO45 é strapping — pull-down 10 kΩ recomendado se necessário.
  *   R5. GPIO2 está conectado ao LED onboard (LED ON). A presença do LED
  *       pode degradar a sensibilidade do touch T2 — testar SNR na HW real.
- *
- * CONFLITO [C1] RESOLVIDO:
- *   HAL_I2S_SCK migrado para GPIO41 (livre após ST7789_DC → GPIO45).
- *   GPIO44 agora é exclusivo de HAL_UART1_RX (servos).
+ *   R6. GPIO46 é strapping (entrada) no boot; após boot funciona como RX normal.
  */
 
 #pragma once
@@ -41,23 +37,19 @@
 
 /* ──────────────────────────────────────────────────────────────
  * UART1 — servos SCS0009 × 2 via FE-TTLinker (full-duplex)
- *
- * ⚠ GPIO43 = UART0_TX (U0TXD) por padrão — ver Regra R3
- * ⚠ GPIO44 = UART0_RX (U0RXD) por padrão — ver Regra R3
- * ⚠ GPIO44 compartilhado com HAL_I2S_SCK — ver Conflito [C1]
+ * GPIO20 (TX) e GPIO46 (RX) — livres de conflitos.
+ * UART0 (console) preservada em GPIO43/44.
  * ────────────────────────────────────────────────────────────── */
-#define HAL_UART1_TX        43
-#define HAL_UART1_RX        44   /* [C1] mesmo pino que HAL_I2S_SCK */
+#define HAL_UART1_TX        20
+#define HAL_UART1_RX        46   /* strapping no boot, RX normal após boot — ver R6 */
 #define HAL_UART1_PORT      UART_NUM_1
 #define HAL_UART1_BAUD      1000000 /* SCS0009 padrão: 1 Mbps */
 
 /* ──────────────────────────────────────────────────────────────
  * I2S full-duplex — INMP441 (mic) + MAX98357A (amp)
  * BCLK e WS compartilhados: I2S0 full-duplex, mesma taxa de amostragem
- *
- * ⚠ HAL_I2S_SCK = GPIO44 = HAL_UART1_RX — ver Conflito [C1]
  * ────────────────────────────────────────────────────────────── */
-#define HAL_I2S_SCK         41   /* BCLK compartilhado mic + amp — GPIO41 livre após DC→GPIO45 */
+#define HAL_I2S_SCK         41   /* BCLK compartilhado mic + amp */
 #define HAL_I2S_WS          42   /* LRCK/WS compartilhado mic + amp */
 #define HAL_I2S_MIC_SD      14   /* INMP441  → dados RX (I2S data in) */
 #define HAL_I2S_AMP_DIN     1    /* MAX98357A ← dados TX (I2S data out) */
@@ -147,24 +139,23 @@
  *     4 │ HAL_I2C_SDA             │ I2C / OV2640 SIOD   │ ⚠ compartilhado
  *     5 │ HAL_I2C_SCL             │ I2C / OV2640 SIOC   │ ⚠ compartilhado
  *    14 │ HAL_I2S_MIC_SD          │ INMP441 RX data     │
+ *    19 │ HAL_RMT_LED             │ WS2812 × 3          │
+ *    20 │ HAL_UART1_TX            │ Servo UART1 TX      │
  *    21 │ HAL_SPI_MOSI            │ ST7789 MOSI         │
  *    38 │ HAL_SD_CMD              │ SDMMC CMD           │ fixo placa
  *    39 │ HAL_SD_CLK              │ SDMMC CLK           │ fixo placa
  *    40 │ HAL_SD_DATA0            │ SDMMC DATA0         │ fixo placa
- *    45 │ HAL_ST7789_DC           │ ST7789 D/C          │ ⚠ strapping — ok pós-boot
- *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
+ *    41 │ HAL_I2S_SCK             │ I2S BCLK (shared)   │
  *    42 │ HAL_I2S_WS              │ I2S LRCK (shared)   │
- *    43 │ HAL_UART1_TX            │ Servo UART1 TX      │ ⚠ UART0_TX R3
- *    41 │ HAL_I2S_SCK             │ I2S BCLK            │ livre após DC→GPIO45
- *    44 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ R3 — [C1] resolvido
+ *    43 │ —                       │ UART0 TX (console)  │ reservado R3
+ *    44 │ —                       │ UART0 RX (console)  │ reservado R3
+ *    45 │ HAL_ST7789_DC           │ ST7789 D/C          │ ⚠ strapping — ok pós-boot
+ *    46 │ HAL_UART1_RX            │ Servo UART1 RX      │ ⚠ strapping boot — ver R6
  *    47 │ HAL_SPI_SCK             │ ST7789 SCK          │
- *    19 │ HAL_RMT_LED             │ WS2812 × 3          │
  * ─────┴─────────────────────────┴─────────────────────┴────────────────────
- *  Livres  : nenhum — todos os 9 GPIOs disponíveis estão em uso
+ *  Livres  : nenhum — todos os GPIOs disponíveis estão em uso
  *  CS/RST  : -1 (ST7789 CS hardwired GND; RST via SWRESET)
  *  PSRAM   : GPIO35-37 internos (indisponível)
- *  GPIO19  : HAL_RMT_LED (WS2812) — realocado de GPIO48
- *  USB     : GPIO20 não exposto nos headers
  * ════════════════════════════════════════════════════════════════
  *
  * EXEMPLO LovyanGFX (Bus_SPI + Panel_ST7789):
@@ -179,7 +170,7 @@
  *   bc.pin_sclk    = HAL_SPI_SCK;    // 47
  *   bc.pin_mosi    = HAL_SPI_MOSI;   // 21
  *   bc.pin_miso    = HAL_SPI_MISO;   // -1
- *   bc.pin_dc      = HAL_ST7789_DC;  // 41
+ *   bc.pin_dc      = HAL_ST7789_DC;  // 45
  *   _bus.config(bc);
  *
  *   auto pc = _panel.config();
