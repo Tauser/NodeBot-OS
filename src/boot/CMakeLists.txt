@@ -38,5 +38,6 @@ idf_component_register(
         cloud_bridge
         diagnostics
         ota_manager
+        factory_reset
         freertos
 )
