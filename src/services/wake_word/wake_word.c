@@ -137,7 +137,6 @@ esp_err_t wake_word_init(void)
     cfg->wakenet_model_name = wn_name;
     cfg->aec_init           = false;
     cfg->memory_alloc_mode  = AFE_MEMORY_ALLOC_MORE_PSRAM;
-    cfg->afe_mode           = AFE_MODE_SR;   /* mais preciso que LOW_COST */
 
     /* Obtém iface correspondente ao config e cria dados AFE */
     s_afe_iface = esp_afe_handle_from_config(cfg);
