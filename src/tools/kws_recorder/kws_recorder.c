@@ -1,5 +1,6 @@
 #include "kws_recorder.h"
 #include "audio_capture.h"
+#include "intent_mapper.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -384,6 +385,10 @@ static void console_task(void *arg)
             kws_recorder_run();
             printf("[kws_rec] recorder encerrado — recarregue templates com reset\n");
             fflush(stdout);
+        } else if (c == 't' || c == 'T') {
+            printf("\n[kws_rec] TESTE KWS — fale uma keyword agora!\n");
+            fflush(stdout);
+            intent_mapper_test_capture();
         }
     }
 }

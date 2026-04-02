@@ -40,6 +40,13 @@ esp_err_t intent_mapper_init(void);
 /* Mapeia keyword_id → intent_t. */
 intent_t intent_mapper_resolve(int keyword_id);
 
+/*
+ * Dispara uma captura de teste diretamente (sem wake word).
+ * Útil para diagnóstico via console: captura 3s, roda KWS, loga distâncias.
+ * Thread-safe: ignorado se captura já estiver em andamento.
+ */
+void intent_mapper_test_capture(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -439,19 +439,26 @@ kws_result_t keyword_spotter_match(const int16_t *audio, size_t samples)
     int   real_min_kw = KWS_NO_MATCH;
     int   best_id   = KWS_NO_MATCH;
 
+    /* Acumula distância mínima por keyword para log compacto */
+    float kw_min[KWS_KEYWORDS];
+    for (int i = 0; i < KWS_KEYWORDS; i++) kw_min[i] = FLT_MAX;
+
     for (int t = 0; t < s_n_templates; t++) {
         if (!s_templates[t].valid) continue;
         float dist = dtw_distance(
             s_query_mfcc,       n_query,
             (float *)s_templates[t].mfcc, (int)s_templates[t].n_frames);
-        if (dist < real_min) {
-            real_min    = dist;
-            real_min_kw = (int)s_templates[t].keyword_id;
-        }
-        if (dist < best_dist) {
-            best_dist = dist;
-            best_id   = (int)s_templates[t].keyword_id;
-        }
+        int kid = (int)s_templates[t].keyword_id;
+        if (dist < kw_min[kid]) kw_min[kid] = dist;
+        if (dist < real_min) { real_min = dist; real_min_kw = kid; }
+        if (dist < best_dist) { best_dist = dist; best_id = kid; }
+    }
+
+    /* Log todas as distâncias por keyword (1 linha compacta) */
+    for (int k = 0; k < KWS_KEYWORDS; k++) {
+        if (kw_min[k] < FLT_MAX)
+            ESP_LOGI(TAG, "  %-14s %.1f %s", s_kw_names[k], (double)kw_min[k],
+                     kw_min[k] < KWS_MATCH_THRESHOLD ? "<-- MATCH" : "");
     }
 
     if (best_id != KWS_NO_MATCH) {

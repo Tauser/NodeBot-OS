@@ -8,7 +8,6 @@
 #include "freertos/semphr.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "esp_timer.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -18,27 +17,27 @@ static const char *TAG = "intent";
 
 /* ── Constantes de captura ─────────────────────────────────────────────── */
 #define CAPTURE_MAX_SAMPLES    (16000 * 3)   /* 3s @ 16kHz = 48 000 amostras */
-#define SILENCE_THRESHOLD_SQ   (500 * 500)   /* RMS² mínimo para fala (~-36 dBFS) */
+#define SILENCE_THRESHOLD_SQ   (200 * 200)   /* RMS² mínimo para fala (~-43 dBFS) */
 #define SILENCE_BLOCKS_MIN      16           /* ~512 ms de silêncio (16×32ms) */
 #define SPEECH_BLOCKS_MIN        5           /* mín fala antes de parar       */
 #define TASK_STACK              8192u
 #define TASK_PRIO                 13u   /* acima de Behavior P12, abaixo de EventDispatch P15 */
 #define KWS_TEMPLATES_DIR       "/sdcard/kws"
 
+/* Suprime detecção de fala nos primeiros N samples após wake word —
+ * acumula áudio mas não conta como fala (WHOOSH ainda pode estar tocando). */
+#define CAPTURE_SUPPRESS_SAMPLES  (16000u * 200u / 1000u)  /* 200ms = 3200 samples */
+
 /* ── Estado de captura (escrito em Core 0, lido em Core 1) ─────────────── */
 static int16_t          *s_capture_buf        = NULL;
 static volatile size_t   s_capture_idx        = 0;
 static volatile bool     s_capturing          = false;
-static volatile size_t   s_speech_start_idx   = 0;   /* início da fala no buffer */
-static volatile size_t   s_speech_end_idx     = 0;   /* fim da fala no buffer    */
+static volatile size_t   s_speech_start_idx   = 0;
+static volatile size_t   s_speech_end_idx     = 0;
 static volatile bool     s_speech_started     = false;
 static int               s_speech_count       = 0;
 static int               s_silence_count      = 0;
 static SemaphoreHandle_t s_done_sem           = NULL;
-
-/* Timer para atrasar captura após wake word — aguarda WHOOSH terminar */
-#define CAPTURE_DELAY_MS   250u   /* duração do WHOOSH (~200ms) + margem */
-static esp_timer_handle_t s_capture_timer     = NULL;
 
 /* ── Mapeamento keyword_id → intent_t ──────────────────────────────────── */
 static const intent_t s_kw_to_intent[KWS_KEYWORDS] = {
@@ -69,16 +68,18 @@ static void on_pcm_block(const int16_t *pcm, size_t len)
     }
     uint32_t rms_sq = (uint32_t)(sq / (int64_t)len);
 
-    if (rms_sq >= (uint32_t)SILENCE_THRESHOLD_SQ) {
+    /* Suprime detecção nos primeiros 200ms (WHOOSH ainda pode estar tocando) */
+    bool in_suppress = (s_capture_idx < CAPTURE_SUPPRESS_SAMPLES);
+
+    if (!in_suppress && rms_sq >= (uint32_t)SILENCE_THRESHOLD_SQ) {
         if (!s_speech_started) {
-            /* Recua 50 ms para não cortar o onset da keyword */
-            size_t onset_pad = 800; /* 800 samples = 50 ms @ 16kHz */
+            /* Recua 50ms para não cortar o onset da keyword */
+            size_t onset_pad = 800;
             s_speech_start_idx = (s_capture_idx > onset_pad)
                                  ? s_capture_idx - onset_pad : 0;
             s_speech_started = true;
         }
-        /* Atualiza fim de fala com 100 ms de margem após o bloco atual */
-        size_t tail_pad = 1600; /* 100 ms @ 16kHz */
+        size_t tail_pad = 1600; /* 100ms de margem após fim de fala */
         size_t end_candidate = s_capture_idx + len + tail_pad;
         if (end_candidate > (size_t)CAPTURE_MAX_SAMPLES)
             end_candidate = (size_t)CAPTURE_MAX_SAMPLES;
@@ -86,7 +87,7 @@ static void on_pcm_block(const int16_t *pcm, size_t len)
             s_speech_end_idx = end_candidate;
         s_speech_count++;
         s_silence_count = 0;
-    } else {
+    } else if (!in_suppress) {
         s_silence_count++;
     }
 
@@ -110,10 +111,9 @@ static void on_pcm_block(const int16_t *pcm, size_t len)
     }
 }
 
-/* ── Timer callback — inicia captura após WHOOSH terminar ───────────────── */
-static void capture_start_cb(void *arg)
+/* ── Inicia captura imediatamente ───────────────────────────────────────── */
+static void start_capture(void)
 {
-    (void)arg;
     s_capture_idx      = 0;
     s_speech_count     = 0;
     s_silence_count    = 0;
@@ -122,21 +122,24 @@ static void capture_start_cb(void *arg)
     s_speech_started   = false;
     s_capturing        = true;
     audio_capture_set_pcm_listener(on_pcm_block);
-    ESP_LOGD(TAG, "captura iniciada (pós-WHOOSH)");
+    ESP_LOGI(TAG, "captura iniciada (supressão %ums)",
+             (unsigned)(CAPTURE_SUPPRESS_SAMPLES * 1000u / 16000u));
 }
 
-/* ── Callback EVT_WAKE_WORD (Core 1 dispatch task) ─────────────────────── */
+/* ── Callback EVT_WAKE_WORD ─────────────────────────────────────────────── */
 static void on_wake_word(uint16_t type, void *payload)
 {
     (void)type; (void)payload;
-    if (s_capturing) return;   /* já em captura */
+    if (s_capturing) return;
+    start_capture();
+}
 
-    /* Aguarda WHOOSH terminar antes de abrir o listener de PCM.
-     * Sem delay, o som do speaker contamina o buffer de captura e o DTW
-     * reconhece palavras erradas. */
-    esp_timer_start_once(s_capture_timer,
-                         (uint64_t)CAPTURE_DELAY_MS * 1000u);
-    ESP_LOGD(TAG, "wake word — captura em %ums", CAPTURE_DELAY_MS);
+/* ── Teste direto (sem wake word) ───────────────────────────────────────── */
+void intent_mapper_test_capture(void)
+{
+    if (s_capturing) { ESP_LOGW(TAG, "captura já em andamento"); return; }
+    ESP_LOGI(TAG, "=== TESTE KWS — fale uma keyword ===");
+    start_capture();
 }
 
 /* ── Task de processamento (Core 1, P10) ────────────────────────────────── */
@@ -206,18 +209,6 @@ esp_err_t intent_mapper_init(void)
     esp_err_t kws_err = keyword_spotter_init(KWS_TEMPLATES_DIR);
     if (kws_err != ESP_OK) {
         ESP_LOGW(TAG, "keyword_spotter sem templates — INTENT_UNKNOWN sempre");
-    }
-
-    /* Timer one-shot para atrasar início de captura pós-wake-word */
-    esp_timer_create_args_t timer_args = {
-        .callback = capture_start_cb,
-        .arg      = NULL,
-        .name     = "intent_cap",
-    };
-    esp_err_t terr = esp_timer_create(&timer_args, &s_capture_timer);
-    if (terr != ESP_OK) {
-        ESP_LOGE(TAG, "esp_timer_create falhou: %d", terr);
-        return terr;
     }
 
     /* Subscreve EVT_WAKE_WORD */
