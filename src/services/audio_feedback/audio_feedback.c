@@ -76,7 +76,7 @@ static void load_fallback(sound_id_t id)
 static const char *k_wav_paths[SOUND_COUNT] = {
     [SOUND_BEEP_ACK]        = "/sdcard/sounds/beep_ack.wav",
     [SOUND_DING_NOTIF]      = "/sdcard/sounds/ding_notif.wav",
-    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_ativate.wav",
+    [SOUND_WHOOSH_ACTIVATE] = "/sdcard/sounds/whoosh_activate.wav",
     [SOUND_CLICK_TOUCH]     = "/sdcard/sounds/click_touch.wav",
     [SOUND_ERROR_TONE]      = "/sdcard/sounds/error_tone.wav",
 };

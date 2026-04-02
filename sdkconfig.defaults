@@ -55,3 +55,11 @@ CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=4096
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 # Anti-rollback desabilitado (não queima efuse de versão mínima)
 # CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK is not set
+
+# FreeRTOS — 200 Hz (5 ms tick) necessário para MotionSafety P22 @ 5ms
+# Com 100 Hz o menor tick é 10 ms e MotionSafety fica 2x mais lento.
+CONFIG_FREERTOS_HZ=200
+
+# esp-sr — WakeNet "Jarvis" (WakeNet9, inglês)
+# esp_srmodel_filter() só encontra WakeNet se ao menos um modelo estiver habilitado.
+CONFIG_SR_WN_WN9_JARVIS_TTS=y

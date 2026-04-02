@@ -128,7 +128,10 @@ static bool load_pcm(const char *path, phrase_buf_t *out)
 static void play_buf(const phrase_buf_t *b)
 {
     if (!b || !b->buf || b->samples == 0u) {
-        /* Sem áudio carregado: beep de fallback + pausa para EVT_TTS_DONE coerente */
+        /* Sem áudio carregado: suprime wake word/VAD antes do beep para evitar
+         * que o speaker re-acorde o sistema em loop */
+        wake_word_suppress_ms(WAKE_SUPPRESS_MS);
+        vad_suppress_ms(VAD_SUPPRESS_MS);
         audio_feedback_play(SOUND_BEEP_ACK);
         vTaskDelay(pdMS_TO_TICKS(250));
         return;

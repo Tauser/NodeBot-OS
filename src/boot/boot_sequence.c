@@ -28,6 +28,7 @@
 #include "safe_mode_service.h"
 #include "led_router.h"
 #include "intent_mapper.h"
+#include "kws_recorder.h"
 #include "tts.h"
 #include "dialogue_state_service.h"
 #include "motion_safety_service.h"
@@ -148,6 +149,24 @@ esp_err_t app_boot(void)
 
     /* ── STEP 3: StorageManager (sd_init via weak stub) ─────────────── */
     BOOT_STEP(3, "storage_manager", storage_manager_init());
+
+    /* ── KWS RECORDER MODE — ativa se /sdcard/kws/.record existir ──────
+     * Para ativar: crie o arquivo vazio no SD e reinicie.
+     * O recorder remove o arquivo ao concluir.                          */
+    {
+        FILE *trigger = fopen("/sdcard/kws/.record", "r");
+        if (trigger) {
+            fclose(trigger);
+            ESP_LOGW(TAG, "KWS RECORDER MODE — gravando templates via INMP441");
+            audio_init();           /* I2S driver (INMP441) — obrigatório antes de audio_capture */
+            audio_capture_init();
+            kws_recorder_run();
+            remove("/sdcard/kws/.record");
+            ESP_LOGI(TAG, "recorder concluído — reiniciando em 3s");
+            vTaskDelay(pdMS_TO_TICKS(3000));
+            esp_restart();
+        }
+    }
 
     /* ── STEP 4: LogManager ──────────────────────────────────────────── */
     {

@@ -21,7 +21,8 @@ private:
                  int8_t cv_top, int8_t cv_bot,
                  float squint,
                  float width_scale,
-                 uint16_t color);
+                 uint16_t color,
+                 bool mirror = false);
 
     static void fillEyeColumns(lgfx::LGFX_Sprite *spr,
                                int xl, int ytl, int xr, int ytr,

@@ -24,7 +24,7 @@ extern size_t audio_capture_read(int16_t *buf, size_t samples);
 
 static const char *TAG = "wake_word";
 
-#define TASK_STACK        6144u
+#define TASK_STACK        8192u
 #define TASK_PRIO           15u
 #define SUPPRESS_AFTER_MS  800u   /* auto-supressão após detecção */
 

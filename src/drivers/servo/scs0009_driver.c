@@ -29,7 +29,7 @@ static const char *TAG = "scs0009";
 
 /* ── UART ─────────────────────────────────────────────────────────────────── */
 #define UART_RX_BUF   256
-#define UART_TX_BUF   128
+#define UART_TX_BUF   0    /* 0 = blocking mode; tx_buffer_size > 0 exige > UART_FIFO_LEN (128) */
 #define RESP_TIMEOUT_MS 10   /* resposta do servo em ~1-2ms a 1Mbps */
 
 static SemaphoreHandle_t s_mutex = NULL;

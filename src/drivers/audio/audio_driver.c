@@ -41,6 +41,7 @@ void audio_init(void)
     i2s_chan_config_t chan = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     chan.dma_desc_num  = DMA_BUFFERS;
     chan.dma_frame_num = DMA_FRAMES;
+    chan.auto_clear    = true;   /* silencia TX automaticamente quando buffer esvazia */
     ESP_ERROR_CHECK(i2s_new_channel(&chan, &s_tx, &s_rx));
 
     /* 2. Configura TX — MAX98357A: 16-bit dados, slot 32-bit, estéreo */

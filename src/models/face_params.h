@@ -120,8 +120,8 @@ typedef struct {
               0.0f,0.0f, 0.55f,0.55f, 350, FACE_PRIORITY_IDLE)
 
 #define FACE_ANGRY \
-    FACE_EXPR( 0,24,0,0,  24,0,0,0, 0.80f,0.80f,  0,0,  98,  9,4,  0,-5,  FACE_RED_ACCENT, \
-    0.00f,0.00f,  0.80f,0.80f,  250,  FACE_PRIORITY_REACTION )
+    FACE_EXPR( 0,24,0,0,  24,0,0,0, 0.38f,0.38f,  0,0,  98,  9,4,  0,-5,  FACE_RED_ACCENT, \
+    0.00f,0.00f,  0.70f,0.70f,  250,  FACE_PRIORITY_REACTION )
 
 #define FACE_FURIOUS \
     FACE_EXPR(-8,28,-24,-20, 28,-2,-20,-24, 0.28f,0.28f, 0,0, 94, 6,6, 8,-14, FACE_RED_ACCENT, \

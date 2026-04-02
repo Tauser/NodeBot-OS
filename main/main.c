@@ -4,12 +4,14 @@
 
 #include "boot_sequence.h"
 #include "emotion_mapper.h"
+#include "kws_recorder.h"
 
 static const char *TAG = "main";
 
 void app_main(void)
 {
     app_boot();
+    kws_recorder_console_start();
 
     /* ── Homologação: expressão fixa para observar gaze/blink isolados ── */
     emotion_mapper_apply(EMOTION_NEUTRAL, 0);

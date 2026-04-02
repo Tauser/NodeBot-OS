@@ -13,7 +13,7 @@
 static const char *TAG = "dialogue";
 
 /* ── Timeouts ──────────────────────────────────────────────────────────── */
-#define LISTENING_TIMEOUT_US   (3000000LL)   /* 3 s */
+#define LISTENING_TIMEOUT_US   (6000000LL)   /* 6 s — KWS pode levar ~2s pós-captura */
 #define PROCESSING_TIMEOUT_US  (5000000LL)   /* 5 s */
 
 /* ── Estado ────────────────────────────────────────────────────────────── */

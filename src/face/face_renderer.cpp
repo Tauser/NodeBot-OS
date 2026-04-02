@@ -85,7 +85,8 @@ void FaceRenderer::drawEye(int cx, int cy,
                            int8_t cv_top, int8_t cv_bot,
                            float squint,
                            float width_scale,
-                           uint16_t color)
+                           uint16_t color,
+                           bool mirror)
 {
     if (!_spr) return;
 
@@ -113,7 +114,10 @@ void FaceRenderer::drawEye(int cx, int cy,
 
     const int rise = (int)roundf((float)h * 0.55f * squint);
     if (rise > 0) {
-        _spr->fillTriangle(xl, ybl, xr, ybr, xr, ybr - rise, FACE_BG_COLOR);
+        if (mirror)
+            _spr->fillTriangle(xl, ybl, xr, ybr, xl, ybl - rise, FACE_BG_COLOR);
+        else
+            _spr->fillTriangle(xl, ybl, xr, ybr, xr, ybr - rise, FACE_BG_COLOR);
         _spr->fillRect(xl, ybl + 1, eye_w + 1, rise + 4, FACE_BG_COLOR);
     }
 
@@ -143,7 +147,8 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
             p.cv_top, p.cv_bot,
             p.squint_l,
             width_l,
-            p.color);
+            p.color,
+            false);
 
     drawEye(cx_r, EYE_CY,
             p.tl_r, p.tr_r, p.bl_r, p.br_r,
@@ -152,7 +157,8 @@ void FaceRenderer::draw(const face_params_t &p, int dx, int dy)
             p.cv_top, p.cv_bot,
             p.squint_r,
             width_r,
-            p.color);
+            p.color,
+            true);
 }
 
 static FaceRenderer s_renderer;

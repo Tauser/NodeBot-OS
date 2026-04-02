@@ -20,7 +20,7 @@
 static const char *TAG = "behavior";
 
 /* ── Configuração ──────────────────────────────────────────────────────── */
-#define TASK_STACK         3072u
+#define TASK_STACK         4096u
 #define TASK_PRIO            12u
 #define TICK_MS             100u
 

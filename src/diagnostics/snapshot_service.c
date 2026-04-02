@@ -87,7 +87,7 @@ esp_err_t snapshot_service_init(void)
 {
     mkdir(DIR, 0755);
     BaseType_t ret = xTaskCreatePinnedToCore(snapshot_task, "snapshot",
-                                             2048, NULL, 5, NULL, 1);
+                                             4096, NULL, 5, NULL, 1);
     if (ret != pdPASS) return ESP_FAIL;
     ESP_LOGI(TAG, "ok — snapshot a cada 60s em %s", DIR);
     return ESP_OK;

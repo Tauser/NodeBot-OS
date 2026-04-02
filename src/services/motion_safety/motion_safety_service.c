@@ -29,8 +29,9 @@ __attribute__((weak)) void scs0009_set_torque_enable(uint8_t id, bool en)
 
 /* ── Estado interno (sem malloc) ─────────────────────────────────────── */
 static portMUX_TYPE      s_mux = portMUX_INITIALIZER_UNLOCKED;
-static volatile bool     s_safe          = true;
-static volatile uint32_t s_last_hb_ms    = 0u;
+static volatile bool     s_safe               = true;
+static volatile bool     s_overcurrent_blocked = false;  /* só reset por HW */
+static volatile uint32_t s_last_hb_ms         = 0u;
 
 /* Acumuladores de debounce por servo */
 static uint32_t          s_overcurrent_accum_ms[NUM_SERVOS];
@@ -57,7 +58,8 @@ static void stop_all_servos(void)
 static void trigger_blocked(uint8_t servo_id)
 {
     taskENTER_CRITICAL(&s_mux);
-    s_safe = false;
+    s_safe               = false;
+    s_overcurrent_blocked = true;   /* overcurrent: requer reset de HW para limpar */
     taskEXIT_CRITICAL(&s_mux);
 
     stop_all_servos();
@@ -124,8 +126,9 @@ static void safety_task(void *arg)
 void motion_safety_init(void)
 {
     memset(s_overcurrent_accum_ms, 0, sizeof(s_overcurrent_accum_ms));
-    s_safe       = true;
-    s_last_hb_ms = 0u;
+    s_safe                = true;
+    s_overcurrent_blocked = false;
+    s_last_hb_ms          = 0u;
 
     /* Calcula período real: clamp a mínimo 1 tick (evita assert se HZ<=200) */
     s_period_ticks     = pdMS_TO_TICKS(SAFETY_TASK_PERIOD_MS);
@@ -152,8 +155,12 @@ void motion_safety_feed_heartbeat(void)
     const uint32_t now = now_ms();
     taskENTER_CRITICAL(&s_mux);
     s_last_hb_ms = now;
-    /* Ao receber heartbeat, restaura estado seguro se havia timeout
-     * (overcurrent continua bloqueado — só reseta por reset de HW) */
+    /* Restaura estado seguro se o bloqueio foi por timeout de heartbeat.
+     * Overcurrent permanece bloqueado — só reset de HW limpa s_overcurrent_blocked. */
+    if (!s_safe && !s_overcurrent_blocked) {
+        s_safe = true;
+        ESP_EARLY_LOGI("SAFETY", "heartbeat restaurado → servos liberados");
+    }
     taskEXIT_CRITICAL(&s_mux);
 }
 

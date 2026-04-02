@@ -29,7 +29,7 @@ static const char *TAG = "kws";
 #define KWS_N_TPL_PER_KW           5
 #define KWS_MAX_TEMPLATES        (KWS_KEYWORDS * KWS_N_TPL_PER_KW)  /* 60  */
 #define KWS_DTW_BAND              20   /* largura da banda Sakoe-Chiba       */
-#define KWS_MATCH_THRESHOLD      5.0f  /* DTW normalizado — acima = no match */
+#define KWS_MATCH_THRESHOLD    120.0f  /* temporário: rejeita matches ruins enquanto templates são re-gravados */
 #define KWS_MIN_MATCH_FRAMES       5   /* query muito curta → no match       */
 
 /* ── Nomes das keywords (índice = keyword_id) ──────────────────────────── */
@@ -213,30 +213,30 @@ static int extract_mfcc(const int16_t *audio, size_t samples,
     return n_frames;
 }
 
-/* ── DTW com banda Sakoe-Chiba (2 linhas, sem malloc) ───────────────────── */
+/* ── Subsequence DTW (2 linhas, sem malloc) ─────────────────────────────── */
+/* Encontra o melhor alinhamento do template T em qualquer janela de Q.     */
+/* Sem banda Sakoe-Chiba — necessário quando len(Q) >> len(T).              */
+/* Normaliza por M (tamanho do template) para comparações cross-keyword.    */
 static float dtw_distance(const float *Q, int N, const float *T, int M)
 {
     float *prev = s_dtw_row0;
     float *curr = s_dtw_row1;
-    int    band = KWS_DTW_BAND;
 
-    prev[0] = 0.0f;
-    for (int j = 1; j <= M; j++) prev[j] = FLT_MAX;
+    /* Inicializa prev com infinito — nenhum caminho ainda */
+    for (int j = 0; j <= M; j++) prev[j] = FLT_MAX;
+
+    float min_dist = FLT_MAX;
 
     for (int i = 0; i < N; i++) {
-        curr[0] = FLT_MAX;
+        /* curr[0] = 0: permite iniciar um novo alinhamento neste frame de Q */
+        curr[0] = 0.0f;
 
-        int j_lo = i - band; if (j_lo < 0) j_lo = 0;
-        int j_hi = i + band; if (j_hi >= M) j_hi = M - 1;
-
-        for (int j = 0; j < j_lo; j++) curr[j + 1] = FLT_MAX;
-
-        for (int j = j_lo; j <= j_hi; j++) {
-            /* Distância Euclidiana quadrada */
+        for (int j = 0; j < M; j++) {
             float d = 0.0f;
             const float *qi = Q + (size_t)i * KWS_N_MFCC;
             const float *tj = T + (size_t)j * KWS_N_MFCC;
-            for (int k = 0; k < KWS_N_MFCC; k++) {
+            /* k=0 é C0 (energia absoluta) — sensível a ganho e microfone, omitido */
+            for (int k = 1; k < KWS_N_MFCC; k++) {
                 float diff = qi[k] - tj[k];
                 d += diff * diff;
             }
@@ -250,14 +250,13 @@ static float dtw_distance(const float *Q, int N, const float *T, int M)
             curr[j + 1] = (mn >= FLT_MAX / 2.0f) ? FLT_MAX : (d + mn);
         }
 
-        for (int j = j_hi + 1; j < M; j++) curr[j + 1] = FLT_MAX;
+        /* Registra o melhor match completo do template terminando aqui */
+        if (curr[M] < min_dist) min_dist = curr[M];
 
-        /* Troca linhas */
         float *tmp = prev; prev = curr; curr = tmp;
     }
 
-    float dist = prev[M];
-    return (dist >= FLT_MAX / 2.0f) ? 1e10f : dist / (float)(N + M);
+    return (min_dist >= FLT_MAX / 2.0f) ? 1e10f : min_dist / (float)M;
 }
 
 /* ── Carregamento de arquivo WAV ───────────────────────────────────────── */
@@ -435,6 +434,8 @@ kws_result_t keyword_spotter_match(const int16_t *audio, size_t samples)
 
     /* Compara contra todos os templates */
     float best_dist = KWS_MATCH_THRESHOLD;
+    float real_min  = FLT_MAX;
+    int   real_min_kw = KWS_NO_MATCH;
     int   best_id   = KWS_NO_MATCH;
 
     for (int t = 0; t < s_n_templates; t++) {
@@ -442,6 +443,10 @@ kws_result_t keyword_spotter_match(const int16_t *audio, size_t samples)
         float dist = dtw_distance(
             s_query_mfcc,       n_query,
             (float *)s_templates[t].mfcc, (int)s_templates[t].n_frames);
+        if (dist < real_min) {
+            real_min    = dist;
+            real_min_kw = (int)s_templates[t].keyword_id;
+        }
         if (dist < best_dist) {
             best_dist = dist;
             best_id   = (int)s_templates[t].keyword_id;
@@ -451,10 +456,13 @@ kws_result_t keyword_spotter_match(const int16_t *audio, size_t samples)
     if (best_id != KWS_NO_MATCH) {
         result.keyword_id = best_id;
         result.confidence = 1.0f - best_dist / KWS_MATCH_THRESHOLD;
-        ESP_LOGD(TAG, "match: %s  dist=%.3f  conf=%.2f",
+        ESP_LOGI(TAG, "match: %s  dist=%.3f  conf=%.2f",
                  s_kw_names[best_id], (double)best_dist, (double)result.confidence);
     } else {
-        ESP_LOGD(TAG, "no match  best_dist=%.3f  frames=%d", (double)best_dist, n_query);
+        ESP_LOGI(TAG, "no match  real_min=%.3f(%s)  thr=%.1f  frames=%d",
+                 (double)real_min,
+                 real_min_kw >= 0 ? s_kw_names[real_min_kw] : "?",
+                 (double)KWS_MATCH_THRESHOLD, n_query);
     }
 
     return result;
