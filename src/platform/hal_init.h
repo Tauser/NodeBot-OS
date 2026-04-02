@@ -59,8 +59,9 @@
 #define HAL_I2S_AMP_DIN     1    /* MAX98357A ← dados TX (I2S data out) */
 #define HAL_I2S_MIC_PORT    I2S_NUM_0
 #define HAL_I2S_AMP_PORT    I2S_NUM_1
-/* ⚠ BCLK/WS compartilhados fisicamente (GPIO41/42).
- *   Uso simultâneo mic+amp requer refactor para I2S0 full-duplex. */
+/* BCLK/WS compartilhados fisicamente (GPIO41/42).
+ * Full-duplex implementado em audio_driver.c — i2s_new_channel() cria TX+RX
+ * juntos no I2S_NUM_0; leitura e escrita simultâneas funcionam sem conflito. */
 #define HAL_I2S_PORT        HAL_I2S_MIC_PORT  /* alias legado */
 
 /* Aliases por periférico (mapeiam para os #defines acima) */

@@ -253,7 +253,7 @@ Branch git         : main
 - [ ] **Soak 8h** com todas as tasks ativas — criterio de pronto E34 nunca executado
 - [ ] **Re-gravar templates KWS** — threshold temporario 120.0 ate templates novos prontos; usar /sdcard/kws/.record ou console serial
 - [ ] **PowerManager** — unico stub real restante (boot_sequence.c:76); MAX17048 + bq25185 + deep sleep
-- [ ] **I2S full-duplex** mic+amp simultaneo (hal_init.h:62, baixa prioridade — sequencial funciona)
+- [x] **I2S full-duplex** mic+amp simultaneo — implementado em audio_driver.c (E28); drivers mortos removidos
 
 ### Criterios de pronto (estado atual)
 - [x] Todas as 43 etapas implementadas e comittadas
