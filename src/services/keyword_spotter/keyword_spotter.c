@@ -29,7 +29,8 @@ static const char *TAG = "kws";
 #define KWS_N_TPL_PER_KW           5
 #define KWS_MAX_TEMPLATES        (KWS_KEYWORDS * KWS_N_TPL_PER_KW)  /* 60  */
 #define KWS_DTW_BAND              20   /* largura da banda Sakoe-Chiba       */
-#define KWS_MATCH_THRESHOLD    120.0f  /* temporário: rejeita matches ruins enquanto templates são re-gravados */
+#define KWS_MATCH_THRESHOLD     40.0f  /* calibrado para templates trimados (sem silêncio);
+                                        * dist/M típico: 5-20 (match), 40+ (no match) */
 #define KWS_MIN_MATCH_FRAMES       5   /* query muito curta → no match       */
 
 /* ── Nomes das keywords (índice = keyword_id) ──────────────────────────── */
