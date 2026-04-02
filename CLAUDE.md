@@ -207,33 +207,59 @@ Detalhes completos com codigo em `docs/ETAPAS_CRITICAS.md`.
 ## 📍 Estado Atual
 
 ```
-Etapa em andamento : E34 - GestureService, PersonaService e soak 8h
-Ultima concluida   : E33 - BehaviorEngine — loop behavior tree
-Proxima            : E35 - Memoria, Mood, Atencao, Engajamento
+Etapa em andamento : Soak 8h + gravar templates KWS + validacao integrada
+Ultima concluida   : E43 - Face Tracking com servo de pescoco (PID pan + safety)
+Todas as 43 etapas : IMPLEMENTADAS (107 commits)
+Proxima pendencia  : Soak 8h todas as tasks ativas + re-gravar templates KWS
 Branch git         : main
 ```
 
-### Decisoes desta etapa que afetam as proximas
-- WakeWordService: AFE pipeline (afe_config_init "M") + WakeNet, Core 0 P15, auto-supressão 800ms.
+### Decisoes acumuladas E28–E43 + post-E04 que afetam manutencao
+
+**Audio / Pipeline de voz**
+- WakeWordService: AFE pipeline (afe_config_init "M") + WakeNet9 Jarvis, Core 0 P15, auto-supressão 800ms.
 - Colisão de nome: `vad_process` do esp-sr conflita com o nosso — renomeado para `nb_vad_process`.
 - esp-sr instalado via component manager: `main/idf_component.yml` + `managed_components/espressif__esp-sr`.
 - TTS: frases PCM/WAV em /sdcard/tts/, tts_play_phrase(phrase_id_t) + tts_play_dynamic(TPL_HOUR, hora); publica EVT_TTS_DONE.
-- DialogueStateService: FSM IDLE→LISTENING(3s)→PROCESSING(5s)→SPEAKING→IDLE; EVT_DIALOGUE_STATE_CHANGED a cada transição.
+- DialogueStateService: FSM IDLE→LISTENING(6s)→PROCESSING(5s)→SPEAKING→IDLE; EVT_DIALOGUE_STATE_CHANGED a cada transição.
 - dialogue_state_event_t{uint8 state} adicionado ao event_bus.h; led_router cancela LED_STATE_LISTENING via EVT_DIALOGUE_STATE_CHANGED.
 - wake_word_suppress_ms(ms) + vad_suppress_ms(ms) chamados pelo tts_task antes de audio_play_pcm.
-- KeywordSpotter: MFCC 13 coef (25ms/10ms, FFT-512 esp-dsp) + DTW Sakoe-Chiba. Templates WAV no SD: /sdcard/kws/{kw_name}_{0..4}.wav (16kHz mono 16-bit).
+- IntentMapper: P13, timer 250ms pós-WHOOSH antes de capturar (evita eco speaker), onset pad 50ms (800 samples), RMS² threshold 500 (~-36 dBFS).
+- KeywordSpotter: MFCC C1..C12 (omite C0 — sensível a ganho), Subsequence DTW sem banda, threshold 120.0 TEMPORARIO (re-gravar templates). Templates: /sdcard/kws/{kw_name}_{0..4}.wav (16kHz mono 16-bit). Gravar via /sdcard/kws/.record trigger ou console serial.
 - IntentMapper: EVT_INTENT_DETECTED com payload intent_event_t{uint8 intent, uint8 confidence}. 12 intents.
+
+**Face**
 - face_engine_register_events() separado de face_engine_start_task() — subscribe só após event_bus_init().
+- face_renderer: squint direito espelhado (mirror=true); FACE_ANGRY squint 0.80→0.38.
+
+**Comportamento**
 - BehaviorEngine: BehaviorLoopTask Core 1 P12 100ms; ordem: heartbeat→state_vector_tick→eventos→BT→publish.
 - StateVector 7 dimensões (energy, valence, arousal, social, attn, comfort, affinity) em PSRAM.
 - FSM: SLEEP→IDLE→ENGAGED→TALKING→SAFE_MODE.
 
-### Criterios de pronto (E33)
-- [x] BehaviorLoop alimenta heartbeat MotionSafety a cada tick
-- [x] StateVector com decay de 100ms
-- [x] FSM percorrendo estados via HW (log: FSM 1→4)
-- [x] Soak 4h sem crashes
+**Servo / Safety**
+- SCS0009 via UART1 GPIO20(TX)/GPIO46(RX), 1 Mbps, FE-TTLinker. GPIO46 requer pull-up 4k7 externo.
+- MotionSafety distingue overcurrent (s_overcurrent_blocked, só reset HW) de timeout de heartbeat (restaurável por heartbeat).
+- FreeRTOS 200 Hz (tick 5 ms) — obrigatório para MotionSafety P22 @ 5ms.
+- FaceTracker: PID pan, dead zone ±5%, cooldown 500ms pós-diálogo, fallback center 5s sem face.
+
+**Sistema**
+- OTA: ECDSA P-256, rollback 60s, CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y.
+- FactoryReset: triple-tap touch + smoke tests em -DQA_BUILD.
+- CloudBridge: Whisper API, T_local 300ms, T_soft 600ms, T_hard 1200ms.
+
+### Pendencias reais (nao sao etapas novas)
+
+- [ ] **Soak 8h** com todas as tasks ativas — criterio de pronto E34 nunca executado
+- [ ] **Re-gravar templates KWS** — threshold temporario 120.0 ate templates novos prontos; usar /sdcard/kws/.record ou console serial
+- [ ] **PowerManager** — unico stub real restante (boot_sequence.c:76); MAX17048 + bq25185 + deep sleep
+- [ ] **I2S full-duplex** mic+amp simultaneo (hal_init.h:62, baixa prioridade — sequencial funciona)
+
+### Criterios de pronto (estado atual)
+- [x] Todas as 43 etapas implementadas e comittadas
 - [x] Build ok
+- [ ] Soak 8h sem crashes
+- [ ] Templates KWS re-gravados com nova pipeline (Subsequence DTW, sem C0)
 
 ---
 
