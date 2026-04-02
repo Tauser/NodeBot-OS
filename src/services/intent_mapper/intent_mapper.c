@@ -18,8 +18,9 @@ static const char *TAG = "intent";
 /* ── Constantes de captura ─────────────────────────────────────────────── */
 #define CAPTURE_MAX_SAMPLES    (16000 * 3)   /* 3s @ 16kHz = 48 000 amostras */
 #define SILENCE_THRESHOLD_SQ   (200 * 200)   /* RMS² mínimo para fala (~-43 dBFS) */
-#define SILENCE_BLOCKS_MIN      16           /* ~512 ms de silêncio (16×32ms) */
-#define SPEECH_BLOCKS_MIN        5           /* mín fala antes de parar       */
+#define SILENCE_BLOCKS_MIN       6           /* ~192 ms de silêncio (6×32ms)  */
+#define SPEECH_BLOCKS_MIN        3           /* mín fala antes de parar       */
+#define SPEECH_MAX_BLOCKS       47           /* máx 1.5s de fala (47×32ms)    */
 #define TASK_STACK              8192u
 #define TASK_PRIO                 13u   /* acima de Behavior P12, abaixo de EventDispatch P15 */
 #define KWS_TEMPLATES_DIR       "/sdcard/kws"
@@ -102,9 +103,10 @@ static void on_pcm_block(const int16_t *pcm, size_t len)
     /* Verifica condição de parada */
     bool end_speech  = (s_speech_count  >= SPEECH_BLOCKS_MIN) &&
                        (s_silence_count >= SILENCE_BLOCKS_MIN);
+    bool speech_too_long = (s_speech_count >= SPEECH_MAX_BLOCKS);
     bool buf_full    = (s_capture_idx   >= (size_t)CAPTURE_MAX_SAMPLES);
 
-    if (end_speech || buf_full) {
+    if (end_speech || speech_too_long || buf_full) {
         s_capturing = false;
         audio_capture_set_pcm_listener(NULL);
         xSemaphoreGive(s_done_sem);
