@@ -251,7 +251,25 @@ esp_err_t app_boot(void)
 
     /* ── Resultado ───────────────────────────────────────────────────── */
     if (s_first_err == ESP_OK) {
-        ESP_LOGI(TAG, "boot OK — todos os subsistemas inicializados");
+        /* Silencia componentes ruidosos — mantém apenas o que importa */
+    esp_log_level_set("wifi",                  ESP_LOG_WARN);
+    esp_log_level_set("wifi_init_config",      ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_handlers",    ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_lwip",        ESP_LOG_WARN);
+    esp_log_level_set("NimBLE",                ESP_LOG_WARN);
+    esp_log_level_set("esp-tls",               ESP_LOG_WARN);
+    esp_log_level_set("HTTP_CLIENT",           ESP_LOG_WARN);
+    esp_log_level_set("esp_afe_sr",            ESP_LOG_WARN);
+    esp_log_level_set("AFE_WAKENET",           ESP_LOG_WARN);
+    esp_log_level_set("esp_image",             ESP_LOG_WARN);
+    esp_log_level_set("spi_flash",             ESP_LOG_WARN);
+    esp_log_level_set("audio_cap",             ESP_LOG_WARN);  /* só erros */
+    esp_log_level_set("kws",                   ESP_LOG_INFO);  /* match/no-match */
+    esp_log_level_set("intent",                ESP_LOG_INFO);
+    esp_log_level_set("wake_word",             ESP_LOG_INFO);
+    esp_log_level_set("behavior",              ESP_LOG_INFO);
+
+    ESP_LOGI(TAG, "boot OK — todos os subsistemas inicializados");
         if (s_log_ready) log_write(LOG_INFO, "boot", "boot OK");
         /* Inicia contagem de 60s para considerar boot estável */
         if (!safe_mode_is_active()) {

@@ -26,7 +26,7 @@ static const char *TAG = "wake_word";
 
 #define TASK_STACK        8192u
 #define TASK_PRIO           15u
-#define SUPPRESS_AFTER_MS  800u   /* auto-supressão após detecção */
+#define SUPPRESS_AFTER_MS  400u   /* auto-supressão após detecção */
 
 static const esp_afe_sr_iface_t *s_afe_iface        = NULL;
 static esp_afe_sr_data_t        *s_afe_data          = NULL;
@@ -137,6 +137,7 @@ esp_err_t wake_word_init(void)
     cfg->wakenet_model_name = wn_name;
     cfg->aec_init           = false;
     cfg->memory_alloc_mode  = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    cfg->afe_mode           = AFE_MODE_SR;   /* mais preciso que LOW_COST */
 
     /* Obtém iface correspondente ao config e cria dados AFE */
     s_afe_iface = esp_afe_handle_from_config(cfg);
